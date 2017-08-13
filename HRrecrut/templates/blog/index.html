@@ -1,0 +1,13 @@
+﻿{% extends 'blog/base.html' %}
+
+{% block title %}Поиск сотрудников{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <h3>
+            Добро пожаловать, {{ user.last_name }} {{ user.first_name }}.<br >
+            Сегодня {{ date }}
+        </h3>
+    {% endif %}
+    <!--a href="/search/"><p>Перейти к поиску</p></a-->
+{% endblock %}

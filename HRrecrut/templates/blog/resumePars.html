@@ -1,0 +1,92 @@
+﻿{% extends 'blog/base.html' %}
+
+{% load static from staticfiles %}
+{% block script %}
+    <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Разобор резюме{% endblock %}
+
+{% block content %}
+    <div>
+        <form action="/request/" method="GET" class="form-signin">
+            {% csrf_token %}
+            <table>
+                <tbody>
+                <tr>
+                    <td>
+                        {{  form.firstName.label }}
+                    </td>
+                    <td>
+                        {{  form.lastName.label }}
+                    </td>
+                    <td>
+                        {{  form.middleName.label }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        {{  form.firstName }}
+                    </td>
+                    <td>
+                        {{  form.lastName }}
+                    </td>
+                    <td>
+                        {{  form.middleName }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        {{  form.gender.label }}
+                    </td>
+                    <td>
+                        {{  form.phone.label }}
+                    </td>
+                    <td>
+                        {{  form.email.label }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        {{  form.gender }}
+                    </td>
+                    <td>
+                        {{  form.phone }}
+                    </td>
+                    <td>
+                        {{  form.email }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        {{  form.location.label }}
+                    </td>
+                    <td>
+                        {{  form.education.label }}
+                    </td>
+                    <td>
+                        {{  form.expJob.label }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        {{  form.location }}
+                    </td>
+                    <td>
+                        {{  form.education }}
+                    </td>
+                    <td>
+                        {{  form.expJob }}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <input type="submit" name="push" value="Отправить"/>
+        </form>
+    </div>
+{% endblock %}
+{% block win %}
+    <div>
+        <iframe srcdoc="{{ resumeBody }}" width="1000px" height="640px"></iframe>
+    </div>
+{% endblock %}

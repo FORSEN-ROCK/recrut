@@ -1,0 +1,138 @@
+﻿{% extends 'blog/base.html' %}
+
+{% load staticfiles %}
+
+{% block script %}
+    <script src="{% static 'script/multiCheckbox.js' %}"></script>
+{% endblock %}
+
+{% block title %}Результаты поиска{% endblock %}
+
+{% block content %}
+    <h1>Поиск резюме:</h1>
+    <div>
+        <form action="/search/result/" method="GET">
+            {% csrf_token %}
+            <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
+            <table>
+                <tbody>
+                    <tr>
+                        <td colspan="3">
+                            <div>
+                                {{ form.query }}   
+                            </div>
+                        </td>
+                        <td>
+                            <input type="submit" name="run" value="Поиск"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            {{  form.searchMode.label }}
+                        </td>
+                        {% for ratio in form.searchMode %}
+                            <td>
+                                <label for={{  ratio.id_for_label }}>
+                                    {{  ratio.choice_label }}
+                                    <span>
+                                        {{ ratio.tag }}
+                                    </span>
+                                </lable>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            {{ form.limit.label }}
+                        </td>
+                        <td>
+                            {{ form.limit }}
+                        </td>
+                        <td>
+                            {{ form.itemPage.label }}
+                        </td>
+                        <td>
+                            {{ form.itemPage }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            {{ form.ageFrom.label }}
+                        </td>
+                        <td>
+                            {{ form.ageFrom }}
+                        </td>
+                        <td>
+                            {{ form.ageTo.label }}
+                        </td>
+                        <td>
+                            {{ form.ageTo }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            {{ form.salaryFrom.label }}
+                        <td>
+                            {{ form.salaryFrom }}
+                        </td>
+                        <td>
+                            {{ form.salaryTo.label }}
+                        <td>
+                            {{ form.salaryTo }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            {{ form.gender.label }}
+                        </td>
+                        {% for ratio in form.gender %}
+                            <td>
+                                <label for={{ ratio.id_for_label }}>
+                                    {{ ratio.choice_label }}
+                                    <span>
+                                        {{ ratio.tag }}
+                                    </span>
+                                </label>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            {{ form.source.label }}
+                        </td>
+                        {% for item in form.source %}
+                            <td>
+                                <label for={{ item.id_for_label }}>
+                                    {{ item.choice_label }}
+                                    <span>
+                                        {{ item.tag }}
+                                    </span>
+                                </label>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+        <!--script>
+        document.addEventListener("submit", function() {
+        var checkList = document.body.querySelectorAll("input[type='checkbox']");
+        var listCheck = [];
+        console.log(checkList)
+        for(var i = 0; i < checkList.length; i++) {
+            if(checkList[i].checked == true){
+                listCheck.push(checkList[i].value);
+                console.log(checkList[i].value)
+            }
+        }
+        listCheck.value=listCheck;
+        var ls = document.createElement('input');
+        ls.name = "sourseList";
+        ls.type = "hidden";
+        ls.value = listCheck;
+        document.forms[0].appendChild(ls);
+
+        });
+    </script-->
+{% endblock %}

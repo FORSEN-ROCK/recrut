@@ -1,0 +1,71 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="{% static 'css/searchResponse.css' %}">
+        <link rel="stylesheet" href="{% static 'css/ball/css/bootstrap.css' %}">
+        <script src="{% static 'css/ball/js/jquery.js' %}"></script>
+        <script src="{% static 'css/ball/js/bootstrap-dropdown.js' %}"></script>
+        {% block script %}{% endblock %}
+        <title>{% block title %}{% endblock %}</title>
+    </head>
+    <body>
+        <div class="navbar">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="brand" href="/">
+                        <em>Recrut+</em>
+                    </a>
+                    <ul class="nav nav-pills">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Управление<b class="caret"></b></a>
+                            <ul id="menu1" class="dropdown-menu">
+                                <li><a href="/">Домашняя страница</a></li>
+                                <li><a href="#">Загрузить резюме из файла</a></li>
+                                <!--li><a href="#">Ссылка</a></li-->
+                                <li class="divider"></li>
+                                <li><a href="/logout/">Выход</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Поиск<b class="caret"></b></a>
+                            <ul id="menu1" class="dropdown-menu">
+                                <li><a href="/search/">Поиск резюме</a></li>
+                                <li><a href="#">Задания на поиск</a></li>
+                                <li><a href="#">База резюме</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Вакансии<b class="caret"></b></a>
+                            <ul id="menu1" class="dropdown-menu">
+                                <li><a href="#">Вакансии моей организации</a></li>
+                                <li><a href="#">Отклики на вакансии</a></li>
+                                <li><a href="#">Архив вакансий</a></li>
+                            </ul>
+                        </li>
+                        <ul class="nav">
+                            <!--li><a href="/">Домашняя страница</a></li-->
+                            <!--li><a href="#">Поиск</a></li-->
+                            <li><a href="#">Штатное расписание</a></li>
+                            <!--li><a href="#">Главная</a></li>
+                            <li><a href="#">Ссылка</a></li>
+                            <li><a href="#">Ссылка</a></li-->
+                        </ul>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <script>
+            $('.dropdown-toggle').dropdown()
+        </script>
+        <div class="container">
+            {% block content %}
+            {% endblock %}
+            {% block win %}
+            {% endblock %}
+            {% block floor %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

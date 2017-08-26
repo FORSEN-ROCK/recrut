@@ -3,6 +3,8 @@ from django.conf import settings
 from .forms import AuthorizationForm, SearchForm, PasingForm
 from .services import SearchingService, ResumeParsService
 from django.contrib.auth import authenticate, login
+from .models import Resume, ResumeLink
+from django.http import JsonResponse
 import datetime
 
 def authorization(request):
@@ -66,34 +68,31 @@ def searchForm(request):
 def responseView(request):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-    if(request.GET):
+        
+    if(request.method == 'GET'):
         data = {key : request.GET.get(key) for key in ('query','limit','itemPage','ageTo','ageFrom','salaryTo','salaryFrom', 'gender','sourseList', 'searchMode')}
-        #data.setdefault('age_to',request.GET.get('ageTo','none'))
-        #data.setdefault('age_to',request.GET.get('ageFrom','none'))
+        ##data.setdefault('age_to',request.GET.get('ageTo','none'))
+        ##data.setdefault('age_to',request.GET.get('ageFrom','none'))
         form = SearchForm(data)
         ##searchOptions = SearchOptions(data['limit'], data['itemPage'])
+        ##print('Work GET!')
         response  = SearchingService()
-        print('sourseList ===== ',request.GET.get('sourseList'))
-        print('data', data['sourseList'].split(','))
+        ##print('sourseList ===== ',request.GET.get('sourseList'))
+        ##print('data', data['sourseList'].split(','))
         ##recordRespone = getSearchingResults(data['query'], int(data['limit']), data['ageFrom'], data['ageTo'], data['salaryTo'], data['salaryFrom'])
         recordRespone = response.search(data['query'], data['sourseList'].split(','), data['searchMode'], data['ageFrom'], data['ageTo'], data['salaryFrom'], data['salaryTo'], data['gender'], data['limit'])
         
         return render(request, 'blog/searchResponse.html', {'form': form, 'recordRespone' : recordRespone})
-    elif(request.POST):
+    elif(request.method == 'POST'):
+        ##print('Work POST!')
         form = SearchForm(request.POST)
         return render(request, 'blog/searchResponse.html', {'form': form})
-
-        
-##def testView(request, parUrl):
-##    print('=======>',parUrl)
-##    return render(request, 'blog/index.html')
-    
-  
+      
 def resumeScanAndPasing(request, absResumeURL):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
         
-    print('=======>',absResumeURL)  ##debug
+    ##print('=======>',absResumeURL)  ##debug
     
     if(absResumeURL == None):
         return render(request, 'blog/404.html') ## not found 404
@@ -103,3 +102,36 @@ def resumeScanAndPasing(request, absResumeURL):
     form = PasingForm(parseData)
     
     return render(request, 'blog/resumePars.html', {'form' : form, 'resumeURL' : absResumeURL, 'resumeBody' : resumeBody})
+
+def saveResume(request):
+    if(request.is_ajax()):
+        print('Yes!!')
+    print(request.headers)
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+    
+    if(request.method == 'POST'):
+        print('JSON Data ===>',request.POST)
+        return JsonResponse({'status': 'success'})
+#        vacansie = Resume()
+    try:
+        checkPerson = Resume.objects.filter(firstName=data['firstName'], lastName=data['lastName'], middleName=data['middleName'], phone=data['phone']).values_list("id", flat=True)
+        checkPhone = Resume.objects.filter(phone=data['phone'], email=data['email']).values_list("id", flat=True)
+        if((not checkPerson) and (not checkPhone)):
+            resumeRecord = Resume.objects.create(data)
+            resumeRecord.seve()
+            status = 'Success'
+        else:
+            if(checkPerson):
+                resumeRecord = Resume.objects.get(id=checkPerson[0])
+            else:
+                resumeRecord = Resume.objects.get(id=checkPhone[0])
+            
+            status = 'Update link'
+            
+        resumeLink = ResumeLink.objects.create(url=data['link'], resume=resumeRecord)
+        resumeLink.save()
+    except:
+        status = 'Data base an exception'
+    finally:
+        return JsonResponse({'status': status})

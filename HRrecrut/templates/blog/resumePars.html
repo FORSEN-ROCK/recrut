@@ -1,15 +1,18 @@
 ﻿{% extends 'blog/base.html' %}
 
-{% load static from staticfiles %}
+{% load staticfiles %}
+
 {% block script %}
     <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
+    <script src="{% static 'script/seveResume.js' %}"></script>
 {% endblock %}
 
 {% block title %}Разобор резюме{% endblock %}
 
 {% block content %}
     <div>
-        <form action="/request/" method="GET" class="form-signin">
+        <!--form action="/resume/add/" method="POST" class="form-signin"-->
+        <form class="form-signin">
             {% csrf_token %}
             <table>
                 <tbody>
@@ -81,8 +84,11 @@
                 </tr>
                 </tbody>
             </table>
-            <input type="submit" name="push" value="Отправить"/>
+            <!-- value="Отправить" -->
+            <!--button name="push" data-add-resume="true">Отправить</button-->
+            <!--input type="submit" name="push" data-add-resume="true" value="Отправить"/-->
         </form>
+        <button name="push" data-add-resume="true" id="push">Отправить</button>
     </div>
 {% endblock %}
 {% block win %}

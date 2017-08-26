@@ -2,10 +2,72 @@
 from urllib.parse   import quote
 from bs4 import BeautifulSoup
 import lxml
-from .models import SearchObject, VailidValues, SearchSequence, SchemaParsing #, OtherAuth
+import requests
+from .models import SearchObject, VailidValues, SearchSequence, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData
 from random import random
 from re import findall
 #import requests
+
+class LoginServer:
+ 
+    def __init__(self, domainName):
+        self.domain = domainName
+        self.authSession = requests.Session()
+        self.credentials_id = None
+   
+    def auth_login(self):
+        credentialsData = Credentials.objects.filter(domainName=self.domain).values("id","loginLink")[0]
+        self.credentials_id = credentialsData['id']        
+        sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
+        self.authSession.headers = RequestHeaders().get_dict(credentials=self.credentials_id)
+        null_cookies = self.check_cookies()
+          
+        if((not sessinCookies) or null_cookies):
+            loginGet = requests.Request("GET", credentialsData['loginLink'])
+            preRequest = self.authSession.prepare_request(loginGet)
+            loginRequest = self.authSession.send(preRequest)
+            
+            if(loginRequest.status_code != 200):
+                return None
+            
+            preCookies = self.authSession.cookies.get_dict()
+            authData = CredentialsData().get_dict(credentials=self.credentials_id)
+            
+            for key in authData:
+                if(authData[key] == None):
+                    authData[key] = preCookies[key]
+            
+            loginPost = requests.Request("POST", credentialsData['loginLink'], data=authData)
+            authPreReguest = self.authSession.prepare_request(loginPost)
+            authRequest = self.authSession.send(authPreReguest)
+            
+            if(authRequest.status_code != 200):
+                return None
+            
+            authCookies = self.authSession.cookies.get_dict()
+            credentialsObj = Credentials.objects.get(id=self.credentials_id)
+            for key in authCookies:
+                SessionData.objects.update_or_create(cookieName=key, cookieValue=authCookies[key], credentials=credentialsObj, defaults={'cookieValue': authCookies[key]},)
+                
+        else:
+            for item in sessinCookies:
+                self.authSession.cookies.set(item['cookieName'], item['cookieValue'])   
+            
+    def auth_out(self):
+        SessionData.objects.all().delete()
+        ##sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
+        ##for item in sessinCookies:
+            ##SessionData.objects.update_or_create(cookieName=item['cookieName'], cookieValue=item['cookieValue'], credentials=self.credentials_id, defaults={'cookieValue':'NULL'},)
+            ##Book.objects.all().delete()
+            
+
+    def check_cookies(self):
+        sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
+        for item in sessinCookies:
+            if(not item['cookieValue']):
+                return True
+                
+        return False
 
 class SearchingService:
 
@@ -33,7 +95,11 @@ class SearchingService:
         return searchSchema, baseSequence
 
         
-    def getSearchingResults(self, searchSchema, baseSequence, parSchema, searchText, limit, itemPage, page):
+    def getSearchingResults(self, domain, searchSchema, baseSequence, parSchema, searchText, limit, itemPage, page):
+        
+        authSession = LoginServer(domain)
+        authSession.auth_login()
+        
         countRecord = 0##(page - 1) * itemPage ##page = 1 to n
         namberPage = 0
         listOfResumes = []
@@ -41,13 +107,28 @@ class SearchingService:
             ##searchSpeak = searchSchema %(namberPage, quote(searchText))#%(quote(searchText), namberPage)
             ##searchSpeak = searchSchema %(quote(searchText), namberPage)
             searchSpeak = searchSchema %(eval(baseSequence))
-            fil = open('searchSpeak.txt', 'w')
-            fil.write(searchSpeak)
-            connect = urllib.urlopen(searchSpeak)
-            content = connect.read()
-            soupTree = BeautifulSoup(content,'html.parser')
-            connect.close()
+            ##fil = open('searchSpeak.txt', 'w')
+            ##fil.write(searchSpeak)
+            connectRequest = requests.Request('GET',searchSpeak)
+            connectSession = authSession.authSession.prepare_request(connectRequest)
+            content = authSession.authSession.send(connectSession)
+            ##connect = urllib.urlopen(searchSpeak)
+            ##content = connect.read()
+            ##print(content.status_code)
+            
+            if(content.status_code != 200):
+                authSession.auth_out()
+                authSession.auth_login()
+                
+                connectRequest = requests.Request('GET',searchSpeak)
+                connectSession = authSession.authSession.prepare_request(connectRequest)
+                content = authSession.authSession.send(connectSession)
+                
+            soupTree = BeautifulSoup(content.text,'html.parser')
+            content.close()
+            ##connect.close()
             notFound = soupTree.find(parSchema['error']['tagName'], parSchema['error']['attrVal'])
+            
             if(notFound == None):
                 formPersons = soupTree.findAll(parSchema['bodyResponse']['tagName'], parSchema['bodyResponse']['attrVal'])
                 for item in formPersons:
@@ -66,8 +147,8 @@ class SearchingService:
                     personMeta.setdefault('jobTitle', link.get_text())
                     ##if(parSchema['jobTitle']['addOption'] != 'NULL'):
                     if(parSchema['jobTitle']['expression'] != None):
-                        print(parSchema['jobTitle']['expression'])
-                        print(eval(parSchema['jobTitle']['expression']))
+                        ##print(parSchema['jobTitle']['expression'])
+                        ##print(eval(parSchema['jobTitle']['expression']))
                         personMeta.setdefault('linkResume', '/search/result/resume/' + eval((parSchema['jobTitle']['expression'])))##eval(parSchema['jobTitle']['addOption']))
                     else:
                         ##'https://hh.ru' + link['href']
@@ -80,7 +161,7 @@ class SearchingService:
                     countRecord += 1
                     print(countRecord)
                     if(countRecord >= int(limit)):
-                        print('Exit!!!!')
+                        ##print('Exit!!!!')
                         return listOfResumes
             else:
                 break
@@ -92,8 +173,10 @@ class SearchingService:
         listOfResume = []
         parsingSchemes = SchemaParsing().generalScheme(domains)
         for domain in parsingSchemes:
+            ##authSession = LoginServer(domain)
+            ##authSession.auth_login()
             serchScheme, baseSequence = self.choiceSearchLink(domain, SearchMode, ageFrom, ageTo, salaryFrom, salaryTo, gender)
-            listOfResume += self.getSearchingResults(serchScheme, baseSequence, parsingSchemes[domain], searchText, limit, itemPage, page)
+            listOfResume += self.getSearchingResults(domain,serchScheme, baseSequence, parsingSchemes[domain], searchText, limit, itemPage, page)
         return listOfResume
     
     
@@ -101,16 +184,34 @@ class SearchingService:
 class ResumeParsService:
     ##def choiceParsScheme(self, domainName): 
     
-    def getResumeData(self, ResumeURL, parSchema, validSelect):
+    def getResumeData(self, domain, ResumeURL, parSchema, validSelect):
+        ##print('begin----------->')
         try:
-            connect = urllib.urlopen(ResumeURL)
+            authSession = LoginServer(domain)
+            authSession.auth_login()
+            ##print('session----->')
+            connectRequest = requests.Request('GET',ResumeURL)
+            connectSession = authSession.authSession.prepare_request(connectRequest)
+            content = authSession.authSession.send(connectSession)
+            ##print('getResumeData --------> ', content.status_code)
+            
+            if(content.status_code != 200):
+                authSession.auth_out()
+                authSession.auth_login()
+                
+                connectRequest = requests.Request('GET',ResumeURL)
+                connectSession = authSession.authSession.prepare_request(connectRequest)
+                content = authSession.authSession.send(connectSession)
+                
+            #connect = urllib.urlopen(ResumeURL)
             #file = open(str(int(random()*10**15)) + '_' + str(int(random()*10**15)) + '.html', 'bw')
-            content = connect.read()
+            #content = connect.read()
             #file.write(content)
             #file.close()
-            soupTree = BeautifulSoup(content,'html.parser')
-            resumePage = content
-            connect.close()
+            soupTree = BeautifulSoup(content.text,'html.parser')
+            resumePage = content.text
+            content.close()
+            ##connect.close()
         except:
             return None
         else:
@@ -230,25 +331,18 @@ class ResumeParsService:
                 
                 ### End Parsing Last Job
                     
-            print(listOfResumes)
+            ##print(listOfResumes)
             return listOfResumes, resumePage
         
     def parsing(self, ResumeURL):
-        domainName = findall(r'\w{0,4}\.?\w+\.ru', ResumeURL)
-        validSelect = VailidValues().generateValidDict(domainName[0], 'genderPars')
-        #print(domainName[0])
-        #print(validSelect)
-        parsingSchemes = SchemaParsing().generalScheme(domainName, 'RESUME')
-        data, itemPage = self.getResumeData(ResumeURL, parsingSchemes[domainName[0]], validSelect)
+        domain = findall(r'\w{0,4}\.?\w+\.ru', ResumeURL)
+        validSelect = VailidValues().generateValidDict(domain[0], 'genderPars')
+        ##print(domainName[0])
+        ##print(validSelect)
+        prse = SchemaParsing.objects.get(domainName=domain, context='RESUME')#.list_values()
+        #parsingSchemes = SchemaParsing().generalScheme(domainName, 'RESUME')
+        #data, itemPage = self.getResumeData(domainName[0], ResumeURL, parsingSchemes[domainName[0]], validSelect)
         return data, itemPage
 
    
    
-#class LoginServer:
-#
-#    def getAuthData(self, domainName):
-#        data = OtherAuth().getAuthParamers(domainName)
-#        authSession = requests.Session()
-#        auth = authSession.get(data['link'], auth=(data['otherUserName'],data['otherPass']))
-#        if(auth.status_code == 200):
-#            sessionCookes = auth.cookies.get_dict()

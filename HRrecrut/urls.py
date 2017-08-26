@@ -10,6 +10,7 @@ urlpatterns = [
     ##url(r'^search/', views.searchView, name='search'),searchForm
     url(r'^search/$', views.searchForm, name='searchForm'),
     url(r'^search\/result/$', views.responseView, name='searchResponse'),
-    url(r'^search\/result\/resume\/(http.+)$', views.resumeScanAndPasing, name='search')
+    url(r'^search\/result\/resume\/(http.+)$', views.resumeScanAndPasing, name='search'),
+    url(r'^resume\/add/$', views.saveResume, name='createResume')
 
 ]

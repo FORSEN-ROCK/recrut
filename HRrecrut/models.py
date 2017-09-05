@@ -4,6 +4,8 @@ from django.db import models
 class Domain(models.Model):
     domainName = models.CharField(max_length=100)
     descriptions = models.CharField(max_length=1000, null=True)
+    rootUrl = models.CharField(max_length=150, null=True)
+    preview = models.BooleanField(default=False)
     
     class Meta:
         unique_together = (("domainName"),)
@@ -23,18 +25,15 @@ class list_of_value(models.Model):
         return list_choices
         
 class SchemaParsing(models.Model):
-    #id = models.AutoField(primary_key=True)
-    #domainName = models.CharField(max_length=100)
     target = models.CharField(max_length=100)
     context = models.CharField(max_length=100)
     tagName = models.CharField(max_length=40)
     attributeName = models.CharField(max_length=100, null=True)
     attributeValue = models.CharField(max_length=200, null=True)
-    #expressions = models.CharField(max_length=100, null=True)
     domain = models.ForeignKey(Domain)
     
     class Meta:
-        unique_together  = (("domain","context", "target"),)#"domainName",
+        unique_together  = (("domain","context", "target"),)
     
     #def generalScheme(self, listDomain=None, context="SEARCH"):
     #    if(listDomain == None):
@@ -78,7 +77,10 @@ class SearchObject(models.Model):
     pay = models.BooleanField(default=False)
     link = models.CharField(max_length=500)
     parametrs = models.CharField(max_length=150) 
- 
+    iterator = models.CharField(max_length=50, default="page")
+    iterStep = models.IntegerField(default=1)
+    startPosition = models.IntegerField(default=0)
+    
     class Meta:
         unique_together  = (("SearchMode", "age", "gender", "pay", "parametrs", "link"),)
  
@@ -91,6 +93,22 @@ class SearchObject(models.Model):
         #print('===> ', sequence)
     #    return  sequence[0] 
 
+    def getPattern(self,**kwargs):
+        age, pay, gen = False, False, False
+        for key in kwargs: #text='%s', page='%i'
+            if((key == 'ageTo' or key == 'ageFrom') and (kwargs[key])):
+                age = True
+            if((key == 'salaryFrom' or key == 'salaryTo') and (kwargs[key])):
+                pay = True
+            if(key == 'gender' and kwargs[key]):
+                gen = True
+ 
+        try:
+            urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen)
+        except: 
+            urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'], age=False,pay=False,gender=False)
+        
+        return urlPattern
 
 ##     
 class SearchExtension(models.Model):
@@ -103,9 +121,6 @@ class SearchExtension(models.Model):
         
 
 class SearchSequence(models.Model):
-    #id = models.AutoField(primary_key=True)
-    #par_row = models.OneToOneField(SearchObject, models.CASCADE, primary_key=False)
-    #domainName = models.CharField(max_length=100,unique=False)
     baseSequence = models.CharField(max_length=100)
     domain = models.ForeignKey(Domain)
     
@@ -119,16 +134,15 @@ class SearchSequence(models.Model):
         
         
 class VailidValues(models.Model):
-    #id = models.AutoField(primary_key=True)
-    #domainName = models.CharField(max_length=100) ## FK
     domain = models.ForeignKey(Domain)
     criterionName = models.CharField(max_length=50)
     rawValue = models.CharField(max_length=50, null=True)
     validValue = models.CharField(max_length=50, null=True)
     expression = models.CharField(max_length=100, null=True)
+    context = models.CharField(max_length=7)
     
     class Meta:
-        unique_together  = (("domain","criterionName", "rawValue", "validValue", "expression"),)
+        unique_together  = (("domain","criterionName", "rawValue", "validValue", "expression","context"),)
     
     #def generateValidDict(self, domainName, criterionName):
     #    validValue = {}
@@ -150,10 +164,7 @@ class VailidValues(models.Model):
     #    return validValue
     
 class Credentials(models.Model):
-    #domainName = models.CharField(max_length=100)
     domain = models.ForeignKey(Domain)
-    #username = models.CharField(max_length=100)
-    #password = models.CharField(max_length=100)
     loginLink = models.CharField(max_length=100)
 
     class Meta:
@@ -220,8 +231,6 @@ class SessionData(models.Model):
         dataFormat.setdefaul("Cookie", "; ".join(cookies))
         return dataFormat
         
-#   def updateSessionData(self, cookieName, cookieValue, credentials):
-#       update_or_create()
 
 class SearchCard(models.Model):
    jobTitle = models.CharField(max_length=100)
@@ -231,8 +240,7 @@ class SearchCard(models.Model):
    payTo = models.CharField(max_length=7)
    gender = models.CharField(max_length=7)
    expJob = models.CharField(max_length=7)
-#   
-#   def
+
 
 class Resume(models.Model):
     firstName = models.CharField(max_length=50)
@@ -248,8 +256,6 @@ class Resume(models.Model):
     class Meta:
         unique_together = (("firstName","lastName","middleName","email"),)
    
-    #def createResumeRecord(self,resumeData):
-    #    Resume.objects.create(resumeData)
 
 class ResumeLink(models.Model):
     url = models.CharField(max_length=100)

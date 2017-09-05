@@ -212,7 +212,7 @@ class RequestHeaders(models.Model):
 
 class SessionData(models.Model):
     cookieName = models.CharField(max_length=50)
-    cookieValue = models.CharField(max_length=100)
+    cookieValue = models.CharField(max_length=100, null=True)
     credentials = models.ForeignKey(Credentials)
    
     class Meta:

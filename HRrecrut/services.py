@@ -6,68 +6,141 @@ import requests
 from .models import SearchObject, VailidValues, SearchSequence, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData
 from random import random
 from re import findall
-#import requests
 
 class LoginServer:
  
     def __init__(self, domain):
-        self.domain = domain#Domain.objects.get(domainName=domainName)
+        self.domain = domain
         self.authSession = requests.Session()
-        self.credentials_id = None
-   
-    def auth_login(self):
-        credentialsData = Credentials.objects.filter(domainName=self.domain).values("id","loginLink")[0]
-        self.credentials_id = credentialsData['id']        
-        sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
-        self.authSession.headers = RequestHeaders().get_dict(credentials=self.credentials_id)
-        null_cookies = self.check_cookies()
-          
-        if((not sessinCookies) or null_cookies):
-            loginGet = requests.Request("GET", credentialsData['loginLink'])
+        self.__credentialsOrigen__ = None
+        self.__authData__ = None
+        self.__sessionHeaders__ = None
+        self.__sessinCookies__ = None
+    
+    def __nullCookies__(self):
+        if(not self.__sessinCookies__):
+            self.__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
+        else:
+            for cookie in self.__sessinCookies__:
+                if(cookie.cookieValue):
+                    return False
+            return True
+            
+    def __notCookies__(self):
+        if(not self.__sessinCookies__):
+            self.__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
+        else:
+            if(len(self.__sessinCookies__) <= 0):
+                return True
+            else:
+                return False
+                
+    #def __connect__(self):
+    #
+    #
+    #
+    #if(testRequest.status_code == 200):
+    #   return True
+    #else:
+    #   return False
+    
+    def authOut(self):
+        if(not self.__sessinCookies__):
+            self.__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
+        else:
+            for cookie in self.__sessinCookies__:
+                cookie.cookieValue = None
+                cookie.save()
+        
+    def authLogin(self):
+        self.__credentialsOrigen__ = Credentials.objects.get(domain=self.domain)
+        #__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)# list obj cookies
+        self.__sessionHeaders__ = RequestHeaders.objects.filter(credentials=self.__credentialsOrigen__)# list obj header
+
+        self.authSession.headers = {item.sectionName : item.body for item in self.__sessionHeaders__}
+        
+        if(self.__nullCookies__() or self.__notCookies__()):
+            loginGet = requests.Request("GET", self.__credentialsOrigen__.loginLink)
             preRequest = self.authSession.prepare_request(loginGet)
             loginRequest = self.authSession.send(preRequest)
             
             if(loginRequest.status_code != 200):
-                return None
+                raise ValueError("Bad Credentials!")
+                
+            securityTokin = self.authSession.cookies.get_dict()
+            self.__authData__ = CredentialsData.objects.filter(credentials=self.__credentialsOrigen__)
             
-            preCookies = self.authSession.cookies.get_dict()
-            authData = CredentialsData().get_dict(credentials=self.credentials_id)
+            for itemAuth in self.__authData__:
+                if(not itemAuth.value):
+                    itemAuth.value = securityTokin[itemAuth.name]
             
-            for key in authData:
-                if(authData[key] == None):
-                    authData[key] = preCookies[key]
+            authData = {item.name : item.value for item in itemAuth}
             
-            loginPost = requests.Request("POST", credentialsData['loginLink'], data=authData)
+            loginPost = requests.Request("POST", self.__credentialsOrigen__.loginLink, data=authData)
             authPreReguest = self.authSession.prepare_request(loginPost)
             authRequest = self.authSession.send(authPreReguest)
             
             if(authRequest.status_code != 200):
-                return None
+                raise ValueError("Bad authData!")
             
             authCookies = self.authSession.cookies.get_dict()
-            credentialsObj = Credentials.objects.get(id=self.credentials_id)
-            for key in authCookies:
-                SessionData.objects.update_or_create(cookieName=key, cookieValue=authCookies[key], credentials=credentialsObj, defaults={'cookieValue': authCookies[key]},)
-                
-        else:
-            for item in sessinCookies:
-                self.authSession.cookies.set(item['cookieName'], item['cookieValue'])   
-            
-    def auth_out(self):
-        SessionData.objects.all().delete()
+            for cookie in authCookies:
+                SessionData.objects.update_or_create(cookieName=cookie, credentials=self.__credentialsOrigen__, defaults={'cookieValue': authCookies[cookie]},)
+                ##if(self.__nullCookies__()):
+                    
+                ##if(self.__notCookies__()):
+        ##credentialsData = Credentials.objects.get(domainName=self.domain)#.values("id","loginLink")[0] CredentialsData
+        #self.credentials_id = credentialsData['id']        
         ##sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
-        ##for item in sessinCookies:
-            ##SessionData.objects.update_or_create(cookieName=item['cookieName'], cookieValue=item['cookieValue'], credentials=self.credentials_id, defaults={'cookieValue':'NULL'},)
-            ##Book.objects.all().delete()
+        #self.authSession.headers = RequestHeaders().get_dict(credentials=self.credentials_id)
+        #null_cookies = self.check_cookies()
+          
+        #if((not sessinCookies) or null_cookies):
+            #loginGet = requests.Request("GET", credentialsData['loginLink'])
+            #preRequest = self.authSession.prepare_request(loginGet)
+            #loginRequest = self.authSession.send(preRequest)
+            
+            #if(loginRequest.status_code != 200):
+            #    return None
+            
+            #preCookies = self.authSession.cookies.get_dict()
+            #authData = CredentialsData().get_dict(credentials=self.credentials_id)
+            
+            #for key in authData:
+            #    if(authData[key] == None):
+            #        authData[key] = preCookies[key]
+            
+            #loginPost = requests.Request("POST", credentialsData['loginLink'], data=authData)
+            #authPreReguest = self.authSession.prepare_request(loginPost)
+            #authRequest = self.authSession.send(authPreReguest)
+            
+            #if(authRequest.status_code != 200):
+            #    return None
+            
+            #authCookies = self.authSession.cookies.get_dict()
+            #credentialsObj = Credentials.objects.get(id=self.credentials_id)
+            #for key in authCookies:
+            #    SessionData.objects.update_or_create(cookieName=key, cookieValue=authCookies[key], credentials=credentialsObj, defaults={'cookieValue': authCookies[key]},)
+                
+       # else:
+            #for item in sessinCookies:
+            #    self.authSession.cookies.set(item['cookieName'], item['cookieValue'])   
+            
+    #def auth_out(self):
+    #    SessionData.objects.all().delete()
+    #    ##sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
+    #    ##for item in sessinCookies:
+    #        ##SessionData.objects.update_or_create(cookieName=item['cookieName'], cookieValue=item['cookieValue'], credentials=self.credentials_id, defaults={'cookieValue':'NULL'},)
+    #        ##Book.objects.all().delete()
             
 
-    def check_cookies(self):
-        sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
-        for item in sessinCookies:
-            if(not item['cookieValue']):
-                return True
-                
-        return False
+    #def check_cookies(self):
+    #    sessinCookies = SessionData.objects.filter(credentials=self.credentials_id).values("cookieName","cookieValue")
+    #    for item in sessinCookies:
+    #        if(not item['cookieValue']):
+    #            return True
+    #            
+    #    return False
 
 class SearchingService:
 

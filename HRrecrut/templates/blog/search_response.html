@@ -1,15 +1,16 @@
 ﻿{% extends 'blog/base.html' %}
 
-{% load staticfiles %}
+
 
 {% block script %}
+    {% load staticfiles %}
     <script src="{% static 'script/multiCheckbox.js' %}"></script>
 {% endblock %}
 
 {% block title %}Результаты поиска{% endblock %}
 
 {% block content %}
-    <h1>Поиск резюме:</h1>
+    <h2>Поиск резюме:</h2>
     <div>
         <form action="/search/result/" method="GET">
             {% csrf_token %}
@@ -115,24 +116,35 @@
             </table>
         </form>
     </div>
-        <!--script>
-        document.addEventListener("submit", function() {
-        var checkList = document.body.querySelectorAll("input[type='checkbox']");
-        var listCheck = [];
-        console.log(checkList)
-        for(var i = 0; i < checkList.length; i++) {
-            if(checkList[i].checked == true){
-                listCheck.push(checkList[i].value);
-                console.log(checkList[i].value)
-            }
-        }
-        listCheck.value=listCheck;
-        var ls = document.createElement('input');
-        ls.name = "sourseList";
-        ls.type = "hidden";
-        ls.value = listCheck;
-        document.forms[0].appendChild(ls);
-
-        });
-    </script-->
+    <div>
+        {% if error_message %}
+            <div class="alert alert-error">
+                <p><span class="error_message">{{ error_message }}</span></p>
+            </div>
+        {% endif %}
+        <ul class="unstyled">
+            {% for resumeItem in resumeList %}
+                <il>
+                    <div class="person_meta">
+                        <span>
+                            <a href={{ resumeItem.link }} class="output__name">{{ resumeItem.jobTitle }}</a>
+                        </span>
+                        {% if resumeItem.domain.preview %}
+                            <span>
+                                <a href={{ resumeItem.previewLink }} class="output__name">Предварительный просмотр</a>
+                            </span>
+                        {% endif %}
+                        <div class="output__info">
+                            <span class="output__compensation">{{ resumeItem.pay }}</span>
+                            <span class="output__age">{{ resumeItem.persAge }}</span>
+                        </div>
+                        <p>Опыт работы</p>
+                        <span>{{ resumeItem.jobExp }}</span>
+                        <p>Место последней работы:</p>
+                        <span>{{ resumeItem.lastJob }}</span>
+                    </div>
+                </il>
+            {% endfor %}
+        </ul>
+    </div>
 {% endblock %}

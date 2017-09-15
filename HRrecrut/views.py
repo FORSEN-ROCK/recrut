@@ -1,11 +1,22 @@
 ﻿from django.shortcuts import render, redirect
 from django.conf import settings
 from .forms import AuthorizationForm, SearchForm, PasingForm
-from .services import SearchingService, ResumeParsService
+from .services import OriginParsing, OrigenUrl, OrigenRequest ##SearchingService, ResumeParsService
 from django.contrib.auth import authenticate, login
 from .models import Resume, ResumeLink
 from django.http import JsonResponse
 import datetime
+import re
+from .models import Domain, SearchObject, VailidValues, SearchSequence, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData
+from .services import LoginServer
+
+'''
+def testView(request):
+    domain = Domain.objects.get(domainName='hh.ru')
+    auth = LoginServer(domain)
+    auth.authLogin()
+    return render(request, 'blog/searchForm.html')
+'''
 
 def authorization(request):
     if(request.method == 'GET'):
@@ -38,7 +49,7 @@ def homespace(request):
     else:
         date = datetime.datetime.today().strftime('%d-%m-%Y')
         return render(request, 'blog/index.html', {'date' : date})
-        
+'''        
 ##def  hello_page(request):
 ##    return render(request, 'blog/index.html', {})
     
@@ -57,6 +68,7 @@ def homespace(request):
 ##    else:
 ##        form = SearchForm()
 ##    return render(request, 'blog/search.html', {'form': form})
+'''
 
 def searchForm(request):
     if not request.user.is_authenticated():
@@ -64,11 +76,83 @@ def searchForm(request):
     else:
         form = SearchForm()
         return render(request, 'blog/searchForm.html', {'form' : form})
-    
-def responseView(request):
+        
+def searchOrigen(request):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
         
+    if(request.method == "GET"):
+        data = {key : request.GET.get(key) for key in ('text','limit','itemPage','ageTo','ageFrom','salaryTo','salaryFrom', 'gender', 'searchMode')}#
+        form = SearchForm(data)
+        dataParm = {key.lower() : data[key] for key in data}
+        domainList = request.GET.get('sourseList').split(',')
+        limit = int(data['limit'])
+        
+        if(not domainList):
+            error_message = "Произошла ошибка! Не был задан источник резюме"
+            return render(request, 'blog/search_response.html', {'form': form, 'error_message': error_message})
+        
+        ##По идее эта штука должна выполняться параллельно
+        requestList = []
+        for domainName in domainList:
+            domain = Domain.objects.get(domainName=domainName)
+            parser = OriginParsing(domain,limit,"SEARCH")
+            parser.generalSchem()
+            parser.setErrorTarget()
+            parser.setBodyResponceTarget()
+            linkOrigen = OrigenUrl(domain=domain)
+            #linkOrigen.setUrlOrPattern()
+            linkOrigen.createSearchLink(dataParm, data)#createLink(dataParm)
+            requestOrig = OrigenRequest(domain,linkOrigen)
+            while(parser.countResume < limit):
+                requestTree = requestOrig.request()
+                requestItem = parser.parsingResume(requestTree)
+                requestList += requestItem
+        
+        return  render(request, 'blog/search_response.html', {'form': form, 'resumeList': requestList})
+        
+    elif(request.method == 'POST'):
+        form = SearchForm(request.POST)
+        return render(request, 'blog/search_response.html', {'form': form})
+
+##Сделать нормално tree - это не bf дерево, это контент ответа на запрос
+        
+        
+def parsingOrigen(request, absResumeLink):
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
+
+    if(absResumeLink == None):
+        return render(request, 'blog/404.html') ## not found 404
+        
+    domainName = re.findall(r'\w{0,4}\.?\w+\.ru', absResumeLink)[0]
+    domain = Domain.objects.get(domainName=domainName)
+    parser = OriginParsing(domain,1,"RESUME")
+    parser.generalSchem()
+    parser.setErrorTarget()
+    linkOrigen = OrigenUrl(domain=domain)
+    linkOrigen.setUrlOrPattern(absResumeLink)
+    requestOrig = OrigenRequest(domain,linkOrigen)
+    requestContent = requestOrig.request()
+    
+    resumeData = parser.parserResume(requestContent)##parserResume
+    
+    if(not resumeData):
+        form = PasingForm()
+    else:
+        form = PasingForm(resumeData)
+        
+    return render(request, 'blog/resumePars.html', {'form' : form, 'resumeBody' : requestContent}) 
+'''        
+def responseView(request):
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+    
+    ##if(request.method == 'GET'):
+    ##    parser = OriginParsing()
+        #while True:
+    elif(request.method == 'POST'):
+        pass
     if(request.method == 'GET'):
         data = {key : request.GET.get(key) for key in ('query','limit','itemPage','ageTo','ageFrom','salaryTo','salaryFrom', 'gender','sourseList', 'searchMode')}
         ##data.setdefault('age_to',request.GET.get('ageTo','none'))
@@ -76,7 +160,7 @@ def responseView(request):
         form = SearchForm(data)
         ##searchOptions = SearchOptions(data['limit'], data['itemPage'])
         ##print('Work GET!')
-        response  = SearchingService()
+        ##response  = SearchingService()
         ##print('sourseList ===== ',request.GET.get('sourseList'))
         ##print('data', data['sourseList'].split(','))
         ##recordRespone = getSearchingResults(data['query'], int(data['limit']), data['ageFrom'], data['ageTo'], data['salaryTo'], data['salaryFrom'])
@@ -87,6 +171,7 @@ def responseView(request):
         ##print('Work POST!')
         form = SearchForm(request.POST)
         return render(request, 'blog/searchResponse.html', {'form': form})
+
       
 def resumeScanAndPasing(request, absResumeURL):
     if not request.user.is_authenticated():
@@ -102,6 +187,7 @@ def resumeScanAndPasing(request, absResumeURL):
     form = PasingForm(parseData)
     
     return render(request, 'blog/resumePars.html', {'form' : form, 'resumeURL' : absResumeURL, 'resumeBody' : resumeBody})
+'''
 
 def saveResume(request):
     if(request.is_ajax()):

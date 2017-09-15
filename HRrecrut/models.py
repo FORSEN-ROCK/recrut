@@ -28,9 +28,10 @@ class SchemaParsing(models.Model):
     target = models.CharField(max_length=100)
     context = models.CharField(max_length=100)
     tagName = models.CharField(max_length=40)
-    attributeName = models.CharField(max_length=100, null=True)
-    attributeValue = models.CharField(max_length=200, null=True)
+    attrName = models.CharField(max_length=100, null=True)
+    attrVal = models.CharField(max_length=200, null=True)
     domain = models.ForeignKey(Domain)
+    parSchemaParsing = models.ForeignKey('SchemaParsing', null=True)
     
     class Meta:
         unique_together  = (("domain","context", "target"),)
@@ -55,10 +56,12 @@ class SchemaParsing(models.Model):
 
 class Expression(models.Model): 
     split = models.CharField(max_length=2, null=True)
-    shearTo = models.CharField(max_length=2, null=True)
-    shearFrom = models.CharField(max_length=2, null=True)
-    sequence = models.CharField(max_length=2, null=True)
+    shearTo = models.IntegerField(null=True)
+    shearFrom = models.IntegerField(null=True)
+    sequence = models.IntegerField(null=True)
     regexp =  models.CharField(max_length=100, null=True)
+    seqOper = models.IntegerField(default=1)
+    join = models.CharField(max_length=2, null=True)
     SchemaParsing = models.ForeignKey(SchemaParsing)
     
     #def get_dict(self,schema_parsing_id=None):
@@ -105,6 +108,7 @@ class SearchObject(models.Model):
  
         try:
             urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen)
+            print('---->',SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen).link)
         except: 
             urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'], age=False,pay=False,gender=False)
         
@@ -166,6 +170,7 @@ class VailidValues(models.Model):
 class Credentials(models.Model):
     domain = models.ForeignKey(Domain)
     loginLink = models.CharField(max_length=100)
+    testLink = models.CharField(max_length=100,null=True)
 
     class Meta:
         unique_together = (("domain","loginLink"),)

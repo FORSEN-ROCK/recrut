@@ -9,8 +9,9 @@ urlpatterns = [
     ##url(r'^$', views.hello_page, name='index'),
     ##url(r'^search/', views.searchView, name='search'),searchForm
     url(r'^search/$', views.searchForm, name='searchForm'),
-    url(r'^search\/result/$', views.responseView, name='searchResponse'),
-    url(r'^search\/result\/resume\/(http.+)$', views.resumeScanAndPasing, name='search'),
-    url(r'^resume\/add/$', views.saveResume, name='createResume')
+    url(r'^search\/result/$', views.searchOrigen, name='searchResponse'), ##views.responseView, name='searchResponse'),
+    url(r'^search\/result\/resume\/(http.+)$', views.parsingOrigen, name='parsing'), ##views.resumeScanAndPasing, name='search'),
+    url(r'^resume\/add/$', views.saveResume, name='createResume'),
+    ##url(r'^test/$', views.testView)
 
 ]

@@ -1,0 +1,39 @@
+﻿{% extends 'blog/base.html' %}
+
+{% load staticfiles %}
+
+{% block style %}
+    <link rel="stylesheet" href="{% static 'css/base_resume.css' %}">
+{% endblock %}
+{% block script %}
+    <script src="{% static 'script/queryAll.js' %}"></script>
+{% endblock %}
+
+{% block title %}Ссылкки{% endblock %}
+
+{% block content %}
+    <div>
+        <div class="control_applet">
+            <!--Управление-->
+            <button name="query" data-query="true" id="query">Поиск</button>
+            <button name="run" data-run="true" id="run_query" disabled>Выполнить</button>
+        </div>
+        <div class="data_space">
+            <!--Данные-->
+            <table class="resume_table">
+                <tbody>
+                    <tr>
+                        {% for item in colems %}
+                            <th class="resume_table_cell" data-name={{ item.fieldName }}>{{ item.displayName }}</th>
+                        {% endfor %}
+                    </tr>
+                    {% for item in links %}
+                        <tr>
+                            <td class="resume_table_cell"><a href={{ item.url }}>{{ item.url }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

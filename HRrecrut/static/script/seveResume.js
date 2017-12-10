@@ -2,6 +2,23 @@
     Функция собирающая сообщение для отправки на сервер
     в формате json
 */
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
 function complileMessage() {
     var fieldsData = {};
     //var fields = document.forms[0];//querySelectorAll('input');
@@ -39,6 +56,9 @@ document.addEventListener("click", function(event) {//click
     //console.log('Work!');
     if(target.dataset.addResume){
         //modal();
+        var csrftoken = getCookie('csrftoken');
+        alert(csrftoken);
+        console.log(complileMessage);
         var csrftoken = document.body.querySelector("input[name='csrfmiddlewaretoken']");
         //console.log(csrftoken);
         var bodyRequest = 'test_data'//complileMessage();

@@ -1,28 +1,29 @@
 from django.db import models
 
 # Create your models here.
+
 class Domain(models.Model):
-    domainName = models.CharField(max_length=100)
-    descriptions = models.CharField(max_length=1000, null=True)
-    rootUrl = models.CharField(max_length=150, null=True)
-    preview = models.BooleanField(default=False)
+    domainName = models.CharField("Домен",max_length=100)
+    descriptions = models.CharField("Описание",max_length=1000, null=True)
+    rootUrl = models.CharField("Базовый URL",max_length=150, null=True)
+    preview = models.BooleanField("Предварительный просмотр",default=False)
+    previewClick = models.BooleanField(default=False)
+    itemRecord = models.IntegerField("Число записей на странице",default=20)
+    inactive = models.BooleanField(default=False)
     
     class Meta:
         unique_together = (("domainName"),)
 
 class list_of_value(models.Model):
     row_id = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=100)
-    lang_id = models.CharField(max_length=3)
-    name = models.CharField(max_length=100)
-    value = models.CharField(max_length=100)
+    type = models.CharField("Тип", max_length=100)
+    lang_id = models.CharField("Язык", max_length=3)
+    name = models.CharField("Имя", max_length=100)
+    value = models.CharField("Значение", max_length=100)
     
     class Meta:
         unique_together  = (("type", "name"),)
     
-    def generateSelect(self,type_cd):
-        list_choices = list_of_value.objects.filter(type=type_cd).values_list('name','value')
-        return list_choices
         
 class SchemaParsing(models.Model):
     target = models.CharField(max_length=100)
@@ -31,28 +32,14 @@ class SchemaParsing(models.Model):
     attrName = models.CharField(max_length=100, null=True)
     attrVal = models.CharField(max_length=200, null=True)
     domain = models.ForeignKey(Domain)
+    notAttr = models.BooleanField(default=False)
+    inactive = models.BooleanField(default=False)
     parSchemaParsing = models.ForeignKey('SchemaParsing', null=True)
+    sequens = models.IntegerField(null=True)
     
     class Meta:
         unique_together  = (("domain","context", "target"),)
     
-    #def generalScheme(self, listDomain=None, context="SEARCH"):
-    #    if(listDomain == None):
-    #        listDomain = SchemaParsing.objects.distinct().values_list('domainName', flat=True)
-    #        
-    #    scheme = {key : {} for key in listDomain}    
-    #    for item in listDomain:
-    #        pasingList = SchemaParsing.objects.filter(domainName=item, context=context).values()
-    #        #print(len(pasingList),pasingList)
-    #        for parStr in pasingList:
-    #            attrVal, target = {}, {}
-    #            attrVal.setdefault(parStr['attributeName'],parStr['attributeValue'])
-    #            target.setdefault('tagName', parStr['tagName'])
-    #            target.setdefault('attrVal', attrVal)
-    #            #print(parStr['expression'])
-    #            target.setdefault('expression', parStr['expressions'])
-    #            scheme[parStr['domainName']].setdefault(parStr['target'], target)
-    #    return scheme
 
 class Expression(models.Model): 
     split = models.CharField(max_length=2, null=True)
@@ -64,12 +51,6 @@ class Expression(models.Model):
     join = models.CharField(max_length=2, null=True)
     SchemaParsing = models.ForeignKey(SchemaParsing)
     
-    #def get_dict(self,schema_parsing_id=None):
-    #    if(schema_parsing_id):
-    #        return None
-    #    
-    #    operations = Expression.objects.filter(SchemaParsing=schema_parsing_id).values("split","shearTo","shearFrom","sequence","regexp")
-    #    for oper in operations:
             
     
 class SearchObject(models.Model):
@@ -86,15 +67,6 @@ class SearchObject(models.Model):
     
     class Meta:
         unique_together  = (("SearchMode", "age", "gender", "pay", "parametrs", "link"),)
- 
-    #def determinationLink(self, domainName, SearchMode, age=False, gender=False, pay=False):  
-    #    searchObject = SearchObject.objects.filter(domainName=domainName, SearchMode=SearchMode, age=age, gender=gender, pay=pay).values_list('link', flat=True)
-    #    #print('===> ', searchObject)
-    #    return  searchObject[0] 
-    #def sequenceParametrs(self, domainName, SearchMode, age=False, gender=False, pay=False):  
-    #    sequence = SearchObject.objects.filter(domainName=domainName, SearchMode=SearchMode, age=age, gender=gender, pay=pay).values_list('parametrs', flat=True)
-        #print('===> ', sequence)
-    #    return  sequence[0] 
 
     def getPattern(self,**kwargs):
         age, pay, gen = False, False, False
@@ -103,37 +75,17 @@ class SearchObject(models.Model):
                 age = True
             if((key == 'salaryFrom' or key == 'salaryTo') and (kwargs[key])):
                 pay = True
-            if(key == 'gender' and kwargs[key]):
+            if(key == 'gender' and (kwargs[key] != 'all')):
                 gen = True
  
         try:
             urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen)
-            print('---->',SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen).link)
+            ##print('---->',SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'],age=age,pay=pay,gender=gen).link)
         except: 
             urlPattern = SearchObject.objects.get(domain=kwargs['domain'],SearchMode=kwargs['mode'], age=False,pay=False,gender=False)
         
         return urlPattern
-
-##     
-class SearchExtension(models.Model):
-    row_id = models.AutoField(primary_key=True)
-    par_row = models.OneToOneField(SearchObject, models.CASCADE, primary_key=False, unique=False)
-    baseSequence = models.CharField(max_length=100)
-    
-    class Meta:
-        unique_together  = (("par_row", "baseSequence"),)
-        
-
-class SearchSequence(models.Model):
-    baseSequence = models.CharField(max_length=100)
-    domain = models.ForeignKey(Domain)
-    
-    class Meta:
-        unique_together  = (("baseSequence","domain"),)##,) ##(("par_row", "baseSequence"),) "domainName", "domainName",
-        
-    #def getBaseSequence(self, domainName):
-    #    sequence = SearchSequence.objects.filter(domainName=domainName).values_list('baseSequence', flat=True)
-    #    return sequence[0]        
+      
  
         
         
@@ -148,24 +100,6 @@ class VailidValues(models.Model):
     class Meta:
         unique_together  = (("domain","criterionName", "rawValue", "validValue", "expression","context"),)
     
-    #def generateValidDict(self, domainName, criterionName):
-    #    validValue = {}
-    #    listVal = VailidValues.objects.filter(domainName=domainName, criterionName=criterionName).values('rawValue','validValue','expression')
-    #    if(len(listVal) == 0):
-    #        return None
-    #        
-    #    for item in listVal:
-    #        #print(item)
-    #        if(item['rawValue'] != None and item['validValue'] != None and item['expression'] == None):
-    #            validValue.setdefault(item['rawValue'], item['validValue'])
-    #        elif(item['rawValue'] != None and item['validValue'] == None and item['expression'] != None):
-    #            validValue.setdefault(item['rawValue'], eval(item['expression']))
-    #        elif(item['rawValue'] == None and item['validValue'] == None and item['expression'] != None):
-    #            validValue = eval(item['expression'])
-    #        else:
-    #            continue
-    #    
-    #    return validValue
     
 class Credentials(models.Model):
     domain = models.ForeignKey(Domain)
@@ -175,7 +109,6 @@ class Credentials(models.Model):
     class Meta:
         unique_together = (("domain","loginLink"),)
 
-#   def 
 
 class CredentialsData(models.Model):
     name = models.CharField(max_length=100)
@@ -235,41 +168,47 @@ class SessionData(models.Model):
         
         dataFormat.setdefaul("Cookie", "; ".join(cookies))
         return dataFormat
+
+# Choices lists
+GENDER_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filter(type='GENDER')]
         
 
 class SearchCard(models.Model):
-   jobTitle = models.CharField(max_length=100)
-   ageFrom = models.CharField(max_length=2)
-   ageTo = models.CharField(max_length=2)
-   payFrom = models.CharField(max_length=7)
-   payTo = models.CharField(max_length=7)
-   gender = models.CharField(max_length=7)
-   expJob = models.CharField(max_length=7)
+    text = models.CharField("Вакансия", max_length=100)
+    ageFrom = models.CharField("Возраст от", max_length=2)
+    ageTo = models.CharField("Возраст до", max_length=2)
+    salaryFrom = models.CharField("Зарплата от", max_length=7)
+    salaryTo = models.CharField("Зарплата до", max_length=7)
+    gender = models.CharField("Пол", max_length=7,choices=GENDER_CHOICES)
+    ##experience = models.CharField("Требуемый опыт работы", max_length=7)
 
 
 class Resume(models.Model):
-    firstName = models.CharField(max_length=50)
-    lastName = models.CharField(max_length=50)
-    middleName = models.CharField(max_length=50)
-    gender = models.CharField(max_length=50)
-    phone = models.CharField(max_length=12)
-    email = models.CharField(max_length=50)
-    location = models.CharField(max_length=100)
-    education = models.CharField(max_length=100)
-    expJob = models.CharField(max_length=50)
+    firstName = models.CharField("Имя", max_length=50)
+    lastName = models.CharField("Фамилия", max_length=50)
+    middleName = models.CharField("Отчество", max_length=50)
+    gender = models.CharField("Пол", max_length=7, choices=GENDER_CHOICES)
+    phone = models.CharField("Тел.", max_length=12)
+    email = models.CharField("Эл.Почта", max_length=50)
+    location = models.CharField("Регион", max_length=100)
+    education = models.CharField("Образование", max_length=100)
+    experience = models.CharField("Опыт работы", max_length=50)
 
     class Meta:
-        unique_together = (("firstName","lastName","middleName","email"),)
+        unique_together = (("firstName","lastName","middleName","email"),)      
    
-
 class ResumeLink(models.Model):
-    url = models.CharField(max_length=100)
+    url = models.URLField(max_length=100)
     resume = models.ForeignKey(Resume)
 
     class Meta:    
         unique_together = (("url","resume"),)
 
-
+class TableColumnHead(models.Model):
+    displayName = models.CharField("Отображаемое название", max_length=40)
+    fieldName = models.CharField("Поле", max_length=40,null=True)
+    tableName = models.CharField("Имя таблицы", max_length=40)
+        
 #class ResponsibleWatching(models.Model):
 #   searchCard_id = models.ForeignKey(SearchCard)
 #   #emplay_id = models.ForeignKey(Emplay)

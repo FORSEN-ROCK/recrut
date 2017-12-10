@@ -4,15 +4,17 @@
 
 {% block script %}
     <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
-    <script src="{% static 'script/seveResume.js' %}"></script>
+    <!--script src="{% static 'script/seveResume.js' %}"></script-->
+    <script src="{% static 'script/queryAll.js' %}"></script>
 {% endblock %}
 
 {% block title %}Разобор резюме{% endblock %}
 
 {% block content %}
     <div>
-        <!--form action="/resume/add/" method="POST" class="form-signin"-->
         <form class="form-signin">
+            <input type="hidden" name="view_name" value="parsingOrigen"/>
+            <input type="hidden" name="link" value={{ link }}/>
             {% csrf_token %}
             <table>
                 <tbody>
@@ -88,11 +90,13 @@
             <!--button name="push" data-add-resume="true">Отправить</button-->
             <!--input type="submit" name="push" data-add-resume="true" value="Отправить"/-->
         </form>
-        <button name="push" data-add-resume="true" id="push">Отправить</button>
+        <button name="save" data-save="true" id="save">Сохранить</button>
+    </div>
+    <div id="status">
     </div>
 {% endblock %}
 {% block win %}
     <div>
-        <iframe srcdoc="{{ resumeBody }}" width="1000px" height="640px"></iframe>
+        <iframe srcdoc="{{ resumeBody }}" width="1000px" height="640px" sandbox="allow-same-origin"></iframe>
     </div>
 {% endblock %}

@@ -1,23 +1,23 @@
 ﻿from django.shortcuts import render, redirect
 from django.conf import settings
-from .forms import AuthorizationForm, SearchForm, PasingForm
+from .forms import AuthorizationForm, SearchForm, PasingForm, ResumeForm, ResumeRecord
 from .services import OriginParsing, OrigenUrl, OrigenRequest ##SearchingService, ResumeParsService
 from django.contrib.auth import authenticate, login
-from .models import Resume, ResumeLink
+from .models import Resume, ResumeLink, TableColumnHead
 from django.http import JsonResponse
 import datetime
 import re
-from .models import Domain, SearchObject, VailidValues, SearchSequence, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData
+from .models import Domain, SearchObject, VailidValues, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData, SearchCard, list_of_value
 from .services import LoginServer
+import json
+from django.forms.models import BaseModelFormSet, modelformset_factory
 
-'''
-def testView(request):
-    domain = Domain.objects.get(domainName='hh.ru')
-    auth = LoginServer(domain)
-    auth.authLogin()
-    return render(request, 'blog/searchForm.html')
-'''
 
+def Test(request):
+    ResumeFormSet = modelformset_factory(Resume, form=ResumeForm)
+    #formset = ResumeFormSet(
+    return render(request, 'blog/test.html', { 'formset' : ResumeFormSet })
+    
 def authorization(request):
     if(request.method == 'GET'):
         authForm = AuthorizationForm()
@@ -49,67 +49,73 @@ def homespace(request):
     else:
         date = datetime.datetime.today().strftime('%d-%m-%Y')
         return render(request, 'blog/index.html', {'date' : date})
-'''        
-##def  hello_page(request):
-##    return render(request, 'blog/index.html', {})
-    
-    
-##def searchView(request):
-##    if( request.method == 'POST'):
-##        form = SearchForm(request.POST)
-##        if form.is_valid():
-##            searchSpeak = form.cleaned_data.get('searchSpeck', None)
-##            limitRecords = form.cleaned_data.get('limitRecord', None)
-##            radirectString = "/search/query=%s&page=%i" %(searchSpeak,1)
-##            recordRespone = getSearchingResults(searchSpeak, limitRecords)
-##            ##return render
-##            return redirect(radirectString)##, context={'form' : form, 'recordRespone': recordRespone})#, 'recordRespone': recordRespone}) ##HttpResponseRedirect ##recordRespone
-##            ##return render(request, 'blog/searchResponse.html', {'form' : form, 'recordRespone': recordRespone})
-##    else:
-##        form = SearchForm()
-##    return render(request, 'blog/search.html', {'form': form})
-'''
 
 def searchForm(request):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
     else:
         form = SearchForm()
-        return render(request, 'blog/searchForm.html', {'form' : form})
+        return render(request, 'blog/search_form.html', {'form' : form})
         
 def searchOrigen(request):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
         
     if(request.method == "GET"):
-        data = {key : request.GET.get(key) for key in ('text','limit','itemPage','ageTo','ageFrom','salaryTo','salaryFrom', 'gender', 'searchMode')}#
+        errorStack = []
+        data = {key : request.GET.get(key) for key in ('text','ageTo','ageFrom','salaryTo','salaryFrom', 'gender', 'searchMode')} ##limit, itemPage
         form = SearchForm(data)
+        form.is_valid()
         dataParm = {key.lower() : data[key] for key in data}
-        domainList = request.GET.get('sourseList').split(',')
-        limit = int(data['limit'])
+        source = request.GET.get('source')
+        limit = 20##int(data['limit'])
+        
+        if(source == 'all'):
+            domainList = [item.name for item in list_of_value.objects.filter(type='SOURCE_LIST') if item.name != 'all']
+            ##print('>>', domainList)
+        else:
+            domainList = source.split(',')
+        ##print('>>',request.GET.get('source'))
+
         
         if(not domainList):
-            error_message = "Произошла ошибка! Не был задан источник резюме"
-            return render(request, 'blog/search_response.html', {'form': form, 'error_message': error_message})
-        
+            errorMessage = "Произошла ошибка! Не был задан источник резюме"
+            errorStack.append(errorMessage)
+            return render(request, 'blog/search_response.html', {'form': form, 'errors': errorStack})
+        ##else:
+        ##    domainList = domainList.split(',')
+            
         ##По идее эта штука должна выполняться параллельно
         requestList = []
+        emptyCount = 0
+        
         for domainName in domainList:
-            domain = Domain.objects.get(domainName=domainName)
+            domain = Domain.objects.get(domainName=domainName, inactive=False)
             parser = OriginParsing(domain,limit,"SEARCH")
             parser.generalSchem()
             parser.setErrorTarget()
             parser.setBodyResponceTarget()
             linkOrigen = OrigenUrl(domain=domain)
-            #linkOrigen.setUrlOrPattern()
-            linkOrigen.createSearchLink(dataParm, data)#createLink(dataParm)
+            linkOrigen.createSearchLink(dataParm, data)
             requestOrig = OrigenRequest(domain,linkOrigen)
             while(parser.countResume < limit):
+                ##print('emptyCount>>',emptyCount)
+                ##print('countResume>>',parser.countResume)
                 requestTree = requestOrig.request()
                 requestItem = parser.parsingResume(requestTree)
-                requestList += requestItem
-        
-        return  render(request, 'blog/search_response.html', {'form': form, 'resumeList': requestList})
+                
+                if(requestItem):
+                    requestList += requestItem
+                else:
+                    emptyCount += 1
+                
+                if(emptyCount > 5):
+                    errorMessage = 'В настоящее время сервер %s недоступен по техническим пречинам' % domain.domainName
+                    ##print(errorMessage)
+                    errorStack.append(errorMessage)
+                    break
+                    
+        return  render(request, 'blog/search_response.html', {'form': form, 'resumeList': requestList, 'errors': errorStack})
         
     elif(request.method == 'POST'):
         form = SearchForm(request.POST)
@@ -121,9 +127,14 @@ def searchOrigen(request):
 def parsingOrigen(request, absResumeLink):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
-
+    
+    print('absResumeLink>>',absResumeLink)
+    
     if(absResumeLink == None):
         return render(request, 'blog/404.html') ## not found 404
+    
+    if(request.method != "GET"):
+        pass
         
     domainName = re.findall(r'\w{0,4}\.?\w+\.ru', absResumeLink)[0]
     domain = Domain.objects.get(domainName=domainName)
@@ -131,6 +142,7 @@ def parsingOrigen(request, absResumeLink):
     parser.generalSchem()
     parser.setErrorTarget()
     linkOrigen = OrigenUrl(domain=domain)
+    print(absResumeLink)
     linkOrigen.setUrlOrPattern(absResumeLink)
     requestOrig = OrigenRequest(domain,linkOrigen)
     requestContent = requestOrig.request()
@@ -142,82 +154,86 @@ def parsingOrigen(request, absResumeLink):
     else:
         form = PasingForm(resumeData)
         
-    return render(request, 'blog/resumePars.html', {'form' : form, 'resumeBody' : requestContent}) 
-'''        
-def responseView(request):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-    
-    ##if(request.method == 'GET'):
-    ##    parser = OriginParsing()
-        #while True:
-    elif(request.method == 'POST'):
-        pass
-    if(request.method == 'GET'):
-        data = {key : request.GET.get(key) for key in ('query','limit','itemPage','ageTo','ageFrom','salaryTo','salaryFrom', 'gender','sourseList', 'searchMode')}
-        ##data.setdefault('age_to',request.GET.get('ageTo','none'))
-        ##data.setdefault('age_to',request.GET.get('ageFrom','none'))
-        form = SearchForm(data)
-        ##searchOptions = SearchOptions(data['limit'], data['itemPage'])
-        ##print('Work GET!')
-        ##response  = SearchingService()
-        ##print('sourseList ===== ',request.GET.get('sourseList'))
-        ##print('data', data['sourseList'].split(','))
-        ##recordRespone = getSearchingResults(data['query'], int(data['limit']), data['ageFrom'], data['ageTo'], data['salaryTo'], data['salaryFrom'])
-        recordRespone = response.search(data['query'], data['sourseList'].split(','), data['searchMode'], data['ageFrom'], data['ageTo'], data['salaryFrom'], data['salaryTo'], data['gender'], data['limit'])
-        
-        return render(request, 'blog/searchResponse.html', {'form': form, 'recordRespone' : recordRespone})
-    elif(request.method == 'POST'):
-        ##print('Work POST!')
-        form = SearchForm(request.POST)
-        return render(request, 'blog/searchResponse.html', {'form': form})
+    return render(request, 'blog/resume_pars.html', {'form' : form, 'resumeBody' : requestContent}) 
 
-      
-def resumeScanAndPasing(request, absResumeURL):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-        
-    ##print('=======>',absResumeURL)  ##debug
-    
-    if(absResumeURL == None):
-        return render(request, 'blog/404.html') ## not found 404
-    
-    response = ResumeParsService()
-    parseData, resumeBody = response.parsing(absResumeURL)
-    form = PasingForm(parseData)
-    
-    return render(request, 'blog/resumePars.html', {'form' : form, 'resumeURL' : absResumeURL, 'resumeBody' : resumeBody})
-'''
-
-def saveResume(request):
-    if(request.is_ajax()):
-        print('Yes!!')
-    print(request.headers)
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-    
-    if(request.method == 'POST'):
-        print('JSON Data ===>',request.POST)
-        return JsonResponse({'status': 'success'})
-#        vacansie = Resume()
-    try:
-        checkPerson = Resume.objects.filter(firstName=data['firstName'], lastName=data['lastName'], middleName=data['middleName'], phone=data['phone']).values_list("id", flat=True)
-        checkPhone = Resume.objects.filter(phone=data['phone'], email=data['email']).values_list("id", flat=True)
+def saveResume(data):
+    if(data['command'] == "save"):
+        checkPerson = Resume.objects.filter(firstName=data['firstName'], lastName=data['lastName'], middleName=data['middleName'], phone=data['phone'])
+        checkPhone = Resume.objects.filter(phone=data['phone'], email=data['email'])
         if((not checkPerson) and (not checkPhone)):
-            resumeRecord = Resume.objects.create(data)
-            resumeRecord.seve()
+            resumeRecord = Resume.objects.create(firstName=data['firstName'],lastName=data['lastName'],middleName=data['middleName'],gender=data['gender'],phone=data['phone'],email=data['email'],location=data['location'],education=data['education'],experience=data['experience'])#data)
+            resumeRecord.save()
+            resumeLink = ResumeLink.objects.create(resume=resumeRecord, url=data['link'])
+            resumeLink.save()
             status = 'Success'
         else:
             if(checkPerson):
-                resumeRecord = Resume.objects.get(id=checkPerson[0])
+                ##print('checkPerson>>',checkPerson[0].firstName)
+                resumeRecord = checkPerson[0]##Resume.objects.get(id=checkPerson[0])
             else:
-                resumeRecord = Resume.objects.get(id=checkPhone[0])
+                ##print('checkPhone>>',checkPhone[0].firstName)
+                resumeRecord = checkPhone[0]##Resume.objects.get(id=checkPhone[0])
             
+            resumeLink = ResumeLink.objects.get_or_create(resume=resumeRecord, url=data['link'])
             status = 'Update link'
-            
-        resumeLink = ResumeLink.objects.create(url=data['link'], resume=resumeRecord)
-        resumeLink.save()
-    except:
-        status = 'Data base an exception'
-    finally:
-        return JsonResponse({'status': status})
+    else:
+        status = "Error no valid operation!"
+        
+    return JsonResponse({'status': status}) 
+        
+        
+def showeResumes(request):
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
+        
+    if(request.method == 'GET'):
+        tableHeader = TableColumnHead.objects.filter(tableName='Resumes')
+        resumeRecords = Resume.objects.all()
+        for item in resumeRecords:
+            item.id = '/resume/link/' + str(item.id)
+        return render(request, 'blog/resume_view.html', {'colems': tableHeader, 'resumes': resumeRecords})
+        
+def showeLink(request, idRecord=0):
+    tableHeader = TableColumnHead.objects.filter(tableName='Link')
+    resume = Resume.objects.get(id=idRecord)
+    ResumeFormSet = modelformset_factory(Resume, form=ResumeForm, extra=0)
+    formset = ResumeFormSet(queryset=Resume.objects.filter(id=idRecord))
+    #resumeForm = ResumeRecord()
+    #resumeForm = modelformset_factory(resume, form=ResumeForm)
+    linksResume = ResumeLink.objects.filter(resume=resume)
+    
+    return render(request, 'blog/link_view.html',{'colems': tableHeader, 'links': linksResume, 'form_resume': formset})
+    
+def incomingTreatment(request):
+    if(request.is_ajax()):
+        data = json.loads(request.body.decode())
+        ##print(data['view'])
+        ##print(data['command'])
+    if(data['view'] == "showeResumes"):
+        pass
+    elif(data['view'] == "showeLink"):
+        pass
+    elif(data['view'] == "parsingOrigen"):
+        ##print('in!!!!!!!')
+        ##print(data)
+        return saveResume(data)
+    return JsonResponse({'status': 'successfully'})
+    
+    
+def searchTask(request):
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
+    
+    table_header = TableColumnHead.objects.filter(tableName='SearchCard')
+    search_cards = SearchCard.objects.all()
+    
+    return render(request, 'blog/search_cards.html',{'colems': table_header, 'search_cards': search_cards})
+    
+def searchForTask(request, idTask=0):
+    if not request.user.is_authenticated():
+        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+    
+    search_task = SearchCard.objects.get(id=idTask)
+    search_form = SearchForm(search_task.__dict__)
+    ##search_task = {key: task.__dict__}
+    return render(request, 'blog/search_form.html', {'form' : search_form})

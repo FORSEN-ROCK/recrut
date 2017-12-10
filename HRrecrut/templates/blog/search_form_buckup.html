@@ -18,7 +18,7 @@
                 <tbody>
                     <tr>
                         <td colspan="3">
-                            <div>
+                            <div >
                                 {{ form.text }}   
                             </div>
                         </td>
@@ -26,22 +26,7 @@
                             <input type="submit" name="run" value="Поиск"/>
                         </td>
                     </tr>
-                    <tr>
-                        <td>
-                            {{  form.searchMode.label }}
-                        </td>
-                        {% for ratio in form.searchMode %}
-                            <td>
-                                <label for={{  ratio.id_for_label }}>
-                                    {{  ratio.choice_label }}
-                                    <span>
-                                        {{ ratio.tag }}
-                                    </span>
-                                </lable>
-                            </td>
-                        {% endfor %}
-                    </tr>
-                    <tr>
+                    <!--tr>
                         <td>
                             {{ form.limit.label }}
                         </td>
@@ -54,7 +39,7 @@
                         <td>
                             {{ form.itemPage }}
                         </td>
-                    </tr>
+                    </tr-->
                     <tr>
                         <td>
                             {{ form.ageFrom.label }}
@@ -83,18 +68,17 @@
                     </tr>
                     <tr>
                         <td>
+                            {{  form.searchMode.label }}
+                        </td>
+                        <td>
+                            {{ form.searchMode }}
+                        </td>
+                        <td>
                             {{ form.gender.label }}
                         </td>
-                        {% for ratio in form.gender %}
-                            <td>
-                                <label for={{ ratio.id_for_label }}>
-                                    {{ ratio.choice_label }}
-                                    <span>
-                                        {{ ratio.tag }}
-                                    </span>
-                                </label>
-                            </td>
-                        {% endfor %}
+                        <td>
+                            {{ form.gender }}
+                        </td>
                     </tr>
                     <tr>
                         <td>
@@ -115,24 +99,4 @@
             </table>
         </form>
     </div>
-        <!--script>
-        document.addEventListener("submit", function() {
-        var checkList = document.body.querySelectorAll("input[type='checkbox']");
-        var listCheck = [];
-        console.log(checkList)
-        for(var i = 0; i < checkList.length; i++) {
-            if(checkList[i].checked == true){
-                listCheck.push(checkList[i].value);
-                console.log(checkList[i].value)
-            }
-        }
-        listCheck.value=listCheck;
-        var ls = document.createElement('input');
-        ls.name = "sourseList";
-        ls.type = "hidden";
-        ls.value = listCheck;
-        document.forms[0].appendChild(ls);
-
-        });
-    </script-->
 {% endblock %}

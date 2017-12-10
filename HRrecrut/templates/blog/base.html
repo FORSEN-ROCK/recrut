@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="{% static 'css/ball/css/bootstrap.css' %}">
         <script src="{% static 'css/ball/js/jquery.js' %}"></script>
         <script src="{% static 'css/ball/js/bootstrap-dropdown.js' %}"></script>
+        {% block style %}{% endblock %}
         {% block script %}{% endblock %}
         <title>{% block title %}{% endblock %}</title>
     </head>
@@ -22,7 +23,7 @@
                             <a class="dropdown-toggle" data-toggle="dropdown" href="#">Управление<b class="caret"></b></a>
                             <ul id="menu1" class="dropdown-menu">
                                 <li><a href="/">Домашняя страница</a></li>
-                                <li><a href="#">Загрузить резюме из файла</a></li>
+                                <!--li><a href="#">Загрузить резюме из файла</a></li-->
                                 <!--li><a href="#">Ссылка</a></li-->
                                 <li class="divider"></li>
                                 <li><a href="/logout/">Выход</a></li>
@@ -32,8 +33,8 @@
                             <a class="dropdown-toggle" data-toggle="dropdown" href="#">Поиск<b class="caret"></b></a>
                             <ul id="menu1" class="dropdown-menu">
                                 <li><a href="/search/">Поиск резюме</a></li>
-                                <li><a href="#">Задания на поиск</a></li>
-                                <li><a href="#">База резюме</a></li>
+                                <li><a href="/search/search_task/">Задания на поиск</a></li>
+                                <li><a href="/resume/">База резюме</a></li>
                             </ul>
                         </li>
                         <li class="dropdown">

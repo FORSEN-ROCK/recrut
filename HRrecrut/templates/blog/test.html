@@ -1,0 +1,68 @@
+﻿{% extends 'blog/base.html' %}
+
+{% load staticfiles %}
+
+{% block style %}
+    <link rel="stylesheet" href="{% static 'css/base_resume.css' %}">
+{% endblock %}
+{% block script %}
+    <script src="{% static 'script/queryAll.js' %}"></script>
+    <!--script src="{% static 'css/ball/js/jquery.cookie.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Сохраненные резюме{% endblock %}
+
+{% block content %}
+    <div>
+        <div class="control_applet">
+            <!--Управление-->
+            <button name="query" data-query="true" id="query">Поиск</button>
+            <button name="run" data-run="true" id="run_query" disabled>Выполнить</button>
+        </div>
+        <div class="data_space">
+            <input type="hidden" name="view_name" value="showeResumes"/>
+            <!--Данные-->
+            <form>
+                {% csrf_token %}
+                <table>
+                    <tbody>
+                        {{ formset.management_form }}
+                        {% for form in formset %}
+                            <tr>
+                                {% for field in form %}
+                                    {% if field.name == "firstName" %}
+                                        <td><a href="/resume/link/{{ form.id.value }}">{{ field }}</a></td>
+                                    {% else %}
+                                        <td>{{ field }}</td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <!--table class="resume_table">
+                    <tbody>
+                        <tr>
+                            {% for item in colems %}
+                                <th class="resume_table_cell" data-name={{ item.fieldName }}>{{ item.displayName }}</th>
+                            {% endfor %}
+                        </tr>
+                        {% for item in resumes %}
+                            <tr>
+                                <td class="resume_table_cell">{{ item.firstName }}</td>
+                                <td class="resume_table_cell">{{ item.lastName }}</td>
+                                <td class="resume_table_cell">{{ item.middleName }}</td>
+                                <td class="resume_table_cell">{{ item.gender }}</td>
+                                <td class="resume_table_cell">{{ item.phone }}</td>
+                                <td class="resume_table_cell">{{ item.email }}</td>
+                                <td class="resume_table_cell">{{ item.location }}</td>
+                                <td class="resume_table_cell">{{ item.education }}</td>
+                                <td class="resume_table_cell">{{ item.experience }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table-->
+            </form>
+        </div>
+    </div>
+{% endblock %}

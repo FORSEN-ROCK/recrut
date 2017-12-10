@@ -1,147 +1,92 @@
 ﻿{% extends 'blog/base.html' %}
 
-
+{% load staticfiles %}
 
 {% block script %}
-    {% load staticfiles %}
-    <script src="{% static 'script/multiCheckbox.js' %}"></script>
+    <!--script src="{% static 'script/multiCheckbox.js' %}"></script-->
 {% endblock %}
 
 {% block title %}Результаты поиска{% endblock %}
 
 {% block content %}
-    <h2>Поиск резюме:</h2>
+    <h2>Результаты поиска:</h2>
     <div>
         <form action="/search/result/" method="GET">
             {% csrf_token %}
             <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
-            <table>
-                <tbody>
-                    <tr>
-                        <td colspan="3">
-                            <div>
-                                {{ form.text }}   
-                            </div>
-                        </td>
-                        <td>
-                            <input type="submit" name="run" value="Поиск"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            {{  form.searchMode.label }}
-                        </td>
-                        {% for ratio in form.searchMode %}
-                            <td>
-                                <label for={{  ratio.id_for_label }}>
-                                    {{  ratio.choice_label }}
-                                    <span>
-                                        {{ ratio.tag }}
-                                    </span>
-                                </lable>
-                            </td>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        <td>
-                            {{ form.limit.label }}
-                        </td>
-                        <td>
-                            {{ form.limit }}
-                        </td>
-                        <td>
-                            {{ form.itemPage.label }}
-                        </td>
-                        <td>
-                            {{ form.itemPage }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            {{ form.ageFrom.label }}
-                        </td>
-                        <td>
-                            {{ form.ageFrom }}
-                        </td>
-                        <td>
-                            {{ form.ageTo.label }}
-                        </td>
-                        <td>
-                            {{ form.ageTo }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            {{ form.salaryFrom.label }}
-                        <td>
-                            {{ form.salaryFrom }}
-                        </td>
-                        <td>
-                            {{ form.salaryTo.label }}
-                        <td>
-                            {{ form.salaryTo }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            {{ form.gender.label }}
-                        </td>
-                        {% for ratio in form.gender %}
-                            <td>
-                                <label for={{ ratio.id_for_label }}>
-                                    {{ ratio.choice_label }}
-                                    <span>
-                                        {{ ratio.tag }}
-                                    </span>
-                                </label>
-                            </td>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        <td>
-                            {{ form.source.label }}
-                        </td>
-                        {% for item in form.source %}
-                            <td>
-                                <label for={{ item.id_for_label }}>
-                                    {{ item.choice_label }}
-                                    <span>
-                                        {{ item.tag }}
-                                    </span>
-                                </label>
-                            </td>
-                        {% endfor %}
-                    </tr>
-                </tbody>
-            </table>
+            <div class="row">
+                <div class="span11">{{ form.text }}</div>
+                <div class="span1"> 
+                    <input type="submit" name="run" value="Поиск"/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.ageFrom.label }}</div>
+                <div class="span3">{{ form.ageFrom }}</div>
+                <div class="span3">{{ form.ageTo.label }}</div>
+                <div class="span3">{{ form.ageTo }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.salaryFrom.label }}</div>
+                <div class="span3">{{ form.salaryFrom }}</div>
+                <div class="span3">{{ form.salaryTo.label }}</div>
+                <div class="span3">{{ form.salaryTo }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.searchMode.label }}</div>
+                <div class="span3">{{ form.searchMode }}</div>
+                <div class="span3">{{ form.gender.label }}</div>
+                <div class="span3">{{ form.gender }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.source.label }}</div>
+                <div class="span3">{{ form.source }}</div>
+            </div>
         </form>
     </div>
     <div>
-        {% if error_message %}
+        {% for error_message in errors %}
             <div class="alert alert-error">
                 <p><span class="error_message">{{ error_message }}</span></p>
             </div>
-        {% endif %}
+        {% endfor %}
         <ul class="unstyled">
             {% for resumeItem in resumeList %}
                 <il>
-                    <div class="person_meta">
+                    <!--div class="person_meta"-->
+                    <div class="well well-large">
+                        <!--span class="btn"-->
                         <span>
                             <a href={{ resumeItem.link }} class="output__name">{{ resumeItem.jobTitle }}</a>
                         </span>
                         {% if resumeItem.domain.preview %}
-                            <span>
+                            <br />
+                            <span class="label"-->
+                            <!--span class="label label-inverse"--> 
+                            <!--span class="btn"-->
                                 <a href={{ resumeItem.previewLink }} class="output__name">Предварительный просмотр</a>
                             </span>
                         {% endif %}
                         <div class="output__info">
-                            <span class="output__compensation">{{ resumeItem.pay }}</span>
-                            <span class="output__age">{{ resumeItem.persAge }}</span>
+                            {% if resumeItem.pay %}
+                                <span class="output__compensation">{{ resumeItem.pay }}</span>
+                            {% endif %}
+                            {% if resumeItem.age %}
+                                <span class="output__age">{{ resumeItem.age }}</span>
+                            {% endif %}
                         </div>
-                        <p>Опыт работы</p>
-                        <span>{{ resumeItem.jobExp }}</span>
-                        <p>Место последней работы:</p>
-                        <span>{{ resumeItem.lastJob }}</span>
+                        <p><b>Опыт работы:&nbsp;</b>
+                        {% if resumeItem.jobExp %}
+                            <span>{{ resumeItem.jobExp }}</span></p>
+                        {% else %}
+                            <span>Без опыта</span></p>
+                        {% endif %}
+                        <p><b>Последнее место работы:&nbsp;</b>
+                        {% if resumeItem.lastJob %}
+                            <span>{{ resumeItem.lastJob }}</span></p>
+                        {% else %}
+                            <span>Нет</span></p>
+                        {% endif %}
                     </div>
                 </il>
             {% endfor %}

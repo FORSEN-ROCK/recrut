@@ -3,12 +3,11 @@ from urllib.parse   import quote
 from bs4 import BeautifulSoup
 import lxml
 import requests
-from .models import Domain, SearchObject, VailidValues, SearchSequence, SchemaParsing, Expression, Credentials, RequestHeaders, SessionData, CredentialsData
+from .models import Domain, SearchObject, VailidValues, SchemaParsing, Expression, Credentials, RequestHeaders, SessionData, CredentialsData, ResumeLink
 from random import random
 from re import findall
 
 class LoginServer(object):
- 
     def __init__(self, domain):
         self.domain = domain
         self.authSession = requests.Session()
@@ -38,22 +37,30 @@ class LoginServer(object):
             return False
                 
     def connect(self):
-        preRequest = requests.Request("GET", self.__credentialsOrigen__.loginLink)
-        requestSession= self.authSession.prepare_request(preRequest)
-        testRequest = self.authSession.send(requestSession)
-        if(testRequest.status_code == 200):
-           return True
-        else:
-           return False
+        pass    
+        #preRequest = requests.Request("POST", self.__credentialsOrigen__.testLink)
+        #requestSession= self.authSession.prepare_request(preRequest)
+        #testRequest = self.authSession.send(requestSession)
+        #if(testRequest.status_code == 200):
+        #   return True
+        #else:
+        #   return False
     
     def authOut(self):
-        if(not self.__sessinCookies__):
-            self.__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
-        else:
-            for cookie in self.__sessinCookies__:
-                cookie.cookieValue = None
-                cookie.save()
-        
+        SessionData.objects.all().delete()
+        #if(not self.__sessinCookies__):
+        #    self.__sessinCookies__ = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
+        #else:
+        #    for cookie in self.__sessinCookies__:
+        #        cookie.cookieValue = None
+        #        cookie.save()
+    
+    def cookiesDell(self):
+        sessionDat = SessionData.objects.filter(credentials=self.__credentialsOrigen__)##.delete()
+        for item in sessionDat:
+            item.delete()
+        ##return True 
+    
     def authLogin(self):
         self.__credentialsOrigen__ = Credentials.objects.get(domain=self.domain)
         self.__sessionHeaders__ = RequestHeaders.objects.filter(credentials=self.__credentialsOrigen__)
@@ -91,6 +98,11 @@ class LoginServer(object):
             sessionCookies = SessionData.objects.filter(credentials=self.__credentialsOrigen__)
             for cookie in sessionCookies:
                 self.authSession.cookies.set(cookie.cookieName, cookie.cookieValue)
+                
+            ##if(not self.connect()): 
+                ##self.cookiesDell()
+                ##self.authOut()
+                ##self.authLogin()
         
 class ResumeMeta(object):
     def __init__(self, domain,**kwargs):
@@ -115,7 +127,13 @@ class ResumeMeta(object):
         else:
             self.previewLink = self.domain.rootUrl + self.origenLink
             self.link = '/search/result/resume/' + self.previewLink
-            
+    
+    #def __str__(self):
+    #    format = '\n'
+    #    for attrName in self.__dict__:
+    #        row = '%s = %s\n' %(attrName, self.__dict__[attrName])
+    #        format += row
+    #    return format
         
 class ResumeData(object):
     def __init__(self, domain, **kwargs):
@@ -150,7 +168,9 @@ class ResumeData(object):
     def validGender(self):
         validValueList = VailidValues.objects.filter(domain=self.domain, context="RESUME")
         validValueDict = {item.rawValue : item.validValue for item in validValueList}
-        self.gender = validValueDict[self.gender]
+        ##print('validValueDict>>',validValueDict)
+        ##print('self.gender>>',self.gender)
+        self.gender = validValueDict.get(self.gender)
         
 class OrigenUrl(object):
     def __init__(self,domain=None, url=None):
@@ -181,7 +201,7 @@ class OrigenUrl(object):
         if(url and self.__domain__):
             domainName = findall(r'\w{0,4}\.?\w+\.ru', url)[0]
             if(domainName != self.__domain__.domainName):
-                print('doaminName>>',domainName,'__domain__.domainName>>',self.__domain__.domainName)
+                ##print('doaminName>>',domainName,'__domain__.domainName>>',self.__domain__.domainName)
                 raise ValueError("A link can be reinstalled within the same domain")
             else:
                 self.__url__ = url
@@ -206,15 +226,20 @@ class OrigenUrl(object):
         self.__iterNum__ = self.pattern.startPosition
         listParamtrs = self.pattern.parametrs.split(',')
         link = self.pattern.link
-        print(dataParm)
+        ##print(dataParm)
+        ##print(self.pattern.parametrs.split(','))
+        ##print(self.pattern.domain.domainName)
+        ##print('>>',dataParm['ageto'])
         for parametr in listParamtrs:
-            print('===>',parametr,parametr.lower(),dataParm.get(parametr.lower()))
-            link = link.replace(parametr, dataParm.get(parametr.lower()))
+            ##print('233 >>', len(listParamtrs))
+            ##print('===>',parametr,parametr.lower(),dataParm.get(parametr.strip().lower()))
+            link = link.replace(parametr, dataParm.get(parametr.strip().lower()))
         
+        ##print('237 >>', link)
         self.__url__ = link 
     
     def createSearchLink(self, dataParm, data):
-        dataParm.setdefault("HEASH_SEARCH", int(random()*10**15))
+        dataParm.setdefault('heash_search', str(int(random()*10**15)))
         valList = VailidValues.objects.filter(domain=self.__domain__, context='SEARCH')
         for item in valList:
             if((data.get('gender') == item.rawValue) and item.criterionName == 'gender'):
@@ -226,14 +251,16 @@ class OrigenUrl(object):
                  
         self.setUrlOrPattern(mode=data.get('searchMode'),ageFrom=data.get('ageFrom'),ageTo=data.get('ageTo'),salaryFrom=data.get('salaryFrom'),salaryTo=data.get('salaryTo'),gen=data.get('gender'))
         self.createLink(dataParm)
-        ##self.request.setLinkObj(self.link)
         
     def nextOrStartIteration(self):
+        ##print('Enter>>')
         if((not self.pattern) and self.__url__):
             raise TypeError("Object url have is not iteration")
         else:
             link = self.__url__.replace(self.pattern.iterator, str(self.__iterNum__))
             self.__iterNum__ += self.pattern.iterStep
+            ##print('link>>', link)
+            ##print('self.__iterNum__>>',self.__iterNum__)
         
         return link
             
@@ -267,33 +294,34 @@ class OrigenRequest(object):
             except ValueError:
                 self.__auth__.authOut()
                 self.__auth__.authLogin()
-
+        ##else:
+            ##if(not self.__auth__.connect()):
+            ##    self.__auth__.authLogin()
+            ##    print('------------------')
+            ##    print('self.__auth__.connect()>>',self.__auth__.connect())
+            ##    print('>>Not connect!!<<')
         if(self.link.pattern):
             searchLink = self.link.nextOrStartIteration()
+            print('searchLink>>',searchLink)
         else:
             searchLink = self.link.getUrl()
                 
         try:
-            ##print('link ==>',searchLink)
+            ##print('Enter-request>>')
+            ##print('Session-cookies>>',self.__auth__.authSession.cookies.get_dict())
             connectRequest = requests.Request('GET',searchLink)
             connectSession = self.__auth__.authSession.prepare_request(connectRequest)
             content = self.__auth__.authSession.send(connectSession)
-            ##print('status==>',content.status_code)
-            ##print('cookies==>',content.cookies.get_dict())
-            ##soupTree = BeautifulSoup(content.text,'html.parser')
-            ##print(soupTree)
-        #except:
-        #    soupTree = None
         finally:
             outContent = content.text
             content.close()
-            return outContent##soupTree
+            ##if(outContent):
+            ##    print('>>not free<<')
+            return outContent
         
 class OriginParsing(object):
     def __init__(self,domain,limit,context):
         self.domain = domain
-        ##self.link = OrigenUrl(self.domain)
-        ##self.request = OrigenRequest(self.domain)
         self.context = context
         self.__limit__ = int(limit)
         self.countResume = 0
@@ -306,7 +334,7 @@ class OriginParsing(object):
         
     def generalSchem(self):
         prserSchem = []
-        parserList = SchemaParsing.objects.filter(domain=self.domain, context=self.context)
+        parserList = SchemaParsing.objects.filter(domain=self.domain, context=self.context, inactive=False)##,parSchemaParsing__isnull=False)
         for item in parserList:
             if(item.target == 'error' or item.target == 'bodyResponse'):
                 pass
@@ -327,11 +355,41 @@ class OriginParsing(object):
         self.__bodyResponse__ = SchemaParsing.objects.get(domain=self.domain, context=self.context, target='bodyResponse')
     
     def parser(self, schema_parsing, tree):
+        ##Вот эту дерминку не мешало бы переписать по человечески
+        ##без дублирования кода, а то это какая-то кантуженная рекурсия
         if(schema_parsing.parSchemaParsing):
             tree = self.parser(schema_parsing.parSchemaParsing, tree)
-            return tree.find(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
+            if(tree):
+                if(schema_parsing.notAttr):
+                    listTags = tree.findAll(schema_parsing.tagName)
+                    for itemTag in listTags:
+                        if(not itemTag.attrs):
+                            return itemTag
+                            
+                elif(schema_parsing.sequens):
+                    listTags = tree.findAll(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
+                    if(len(listTags) >= schema_parsing.sequens - 1):
+                        return listTags[schema_parsing.sequens - 1]
+                    else:
+                        return None
+                else:
+                    return tree.find(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
         else:
-            return tree.find(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
+            if(tree):
+                if(schema_parsing.notAttr):
+                    listTags = tree.findAll(schema_parsing.tagName)
+                    for itemTag in listTags:
+                        if(not itemTag.attrs):
+                            return itemTag
+                            
+                elif(schema_parsing.sequens):
+                    listTags = tree.findAll(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
+                    if(len(listTags) >= schema_parsing.sequens - 1):
+                        return listTags[schema_parsing.sequens - 1]
+                    else:
+                        return None
+                else:
+                    return tree.find(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
         
     def executeExpression(self, expression_parsing, parameter):
         if(not parameter):
@@ -341,13 +399,16 @@ class OriginParsing(object):
             parameter = parameter.split(expression_parsing.split)
             
         if((expression_parsing.shearTo or expression_parsing.shearFrom) and type(parameter) is not dict):
-            parameter = parameter[expression_parsing.shearFrom : expression_parsing.shearTo]
-   
-        if((expression_parsing.sequence) or expression_parsing.split):
-            parameter = parameter[expression_parsing.sequence]
-            
+            parameter = parameter[expression_parsing.shearFrom  : expression_parsing.shearTo]
+               
         if((expression_parsing.regexp) and type(parameter) is str):
             parameter = findall(expression_parsing.regexp, parameter)
+            
+        if(expression_parsing.sequence):## or expression_parsing.split):
+            ##Так как сделана дружественная индексация от 1 до N
+            seque = expression_parsing.sequence - 1
+            if(seque < len(parameter)):
+                parameter = parameter[seque]
             
         if((expression_parsing.join) and type(parameter) is list):
             parameter = expression_parsing.join.join(parameter)
@@ -355,13 +416,16 @@ class OriginParsing(object):
         return parameter
     
     def parsingResume(self, responseContent):
+        ##print('enter>>')
         tree = BeautifulSoup(responseContent,'html.parser')
-        resultList = []
-        ##print('Schema>>', self.__schema__)   
+        resultList = []  
+        pastRecord = 0 #Счетчик просмотренных резюме
         notFound = tree.find(self.__notFound__.tagName, {self.__notFound__.attrName : self.__notFound__.attrVal})
         if(not notFound):
             resumes = tree.findAll(self.__bodyResponse__.tagName,{self.__bodyResponse__.attrName : self.__bodyResponse__.attrVal})
-            for resumeItem in resumes: 
+            for resumeItem in resumes:
+                ##if(not resumeItem):
+                    ##print('resumeItem>>',resumeItem)
                 ##перебор резюме
                 resumeRecord = ResumeMeta(self.domain)
                 for rowParse in self.__schema__:
@@ -370,9 +434,11 @@ class OriginParsing(object):
                         ##Перебор объектов основных операций
                         if(type(itemOper) is SchemaParsing):
                             parameter = self.parser(itemOper, resumeItem)
-                            if(itemOper.target != 'origenLink'):
+                            if((itemOper.target != 'origenLink')and parameter):
+                                ##print('itemOper.target>>',itemOper.target)
+                                ##print('parameter>>',parameter)
                                 parameter = parameter.get_text()
-                            else:
+                            elif(parameter):
                                 parameter = parameter['href']
                         if(type(itemOper) is Expression):
                             parameter = self.executeExpression(itemOper, parameter)
@@ -381,13 +447,39 @@ class OriginParsing(object):
                         resumeRecord.setAttr(itemOper.target, parameter)
                     else:
                         resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
-                    resumeRecord.setAttr(itemOper.target, parameter)
+                    ##resumeRecord.setAttr(itemOper.target, parameter)
+
+                    if(type(itemOper) is SchemaParsing):
+                        resumeRecord.setAttr(itemOper.target, parameter)
+                    else:
+                        resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
+
                     resumeRecord.createLink()
-                resultList.append(resumeRecord)
-                self.countResume +=1
+                ##checkUrl = findall(r'.+\?',resumeRecord.previewLink)
+                ##print('checkUrl>>',checkUrl)
+                ##checkUrl = checkUrl[0].replace('?','/')
                 
-                if(self.countResume == self.__limit__):
+                check = ResumeLink.objects.filter(url=resumeRecord.previewLink).count()
+                
+                ##print('check >>',check)
+                if(not check):
+                    ##print('>>',checkUrl)
+                    ##print('>>in!!')
+                    resultList.append(resumeRecord)
+                    self.countResume += 1
+                else:
+                    print('>>',resumeRecord)
+                pastRecord += 1
+                
+                ##print('pastRecord>>',pastRecord,'countResume>>',self.countResume)
+                
+                if(pastRecord == self.domain.itemRecord or self.countResume == self.__limit__):
+                    ##print('countResume>>',self.countResume)
                     return resultList
+        else:
+            ##print('446 >>', 'notFound!')
+            return None
+
 
     def parserResume(self, responseContent):
         tree = BeautifulSoup(responseContent,'html.parser')
@@ -399,14 +491,20 @@ class OriginParsing(object):
                 for itemOper in rowParse:
                     if(type(itemOper) is SchemaParsing):
                         parameter = self.parser(itemOper, tree)
-                        parameter = parameter.get_text()
+                        if(parameter):
+                            parameter = parameter.get_text()
+                            
                     if(type(itemOper) is Expression):
                         parameter = self.executeExpression(itemOper, parameter)
-    
+                
+                if(type(parameter) is str):
+                    parameter = parameter.strip()
+                        
                 if(type(itemOper) is SchemaParsing):
                     resumeRecord.setAttr(itemOper.target, parameter)
                 else:
                     resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
+        ##print('resumeRecord line-473>>',resumeRecord)
         resumeRecord.validGender()
-        print('resumeRecord>>',resumeRecord)
+        ##print('resumeRecord line-475>>',resumeRecord)
         return resumeRecord

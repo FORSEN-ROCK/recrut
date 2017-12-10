@@ -1,0 +1,49 @@
+﻿{% extends 'blog/base.html' %}
+
+{% load staticfiles %}
+
+{% block style %}
+    <link rel="stylesheet" href="{% static 'css/base_resume.css' %}">
+{% endblock %}
+{% block script %}
+    <script src="{% static 'script/queryAll.js' %}"></script>
+    <!--script src="{% static 'css/ball/js/jquery.cookie.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Сохраненные резюме{% endblock %}
+
+{% block content %}
+    <div>
+        <!--div class="control_applet">
+            <!--Управление>
+            <button name="query" data-query="true" id="query">Поиск</button>
+            <button name="run" data-run="true" id="run_query" disabled>Выполнить</button>
+        </div-->
+        <div class="data_space">
+            <input type="hidden" name="view_name" value="showeResumes"/>
+            <!--Данные-->
+            <table class="table table-striped">
+                <tbody>
+                    <tr>
+                        {% for item in colems %}
+                            <th scope="row" data-name={{ item.fieldName }}>{{ item.displayName }}</th>
+                        {% endfor %}
+                    </tr>
+                    {% for item in resumes %}
+                        <tr>
+                            <td scope="row"><a href={{ item.id }}>{{ item.firstName }}</a></td>
+                            <td scope="row">{{ item.lastName }}</td>
+                            <td scope="row">{{ item.middleName }}</td>
+                            <td scope="row">{{ item.gender }}</td>
+                            <td scope="row">{{ item.phone }}</td>
+                            <td scope="row">{{ item.email }}</td>
+                            <td scope="row">{{ item.location }}</td>
+                            <td scope="row">{{ item.education }}</td>
+                            <td scope="row">{{ item.experience }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

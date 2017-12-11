@@ -206,9 +206,24 @@ class ResumeLink(models.Model):
 
 class TableColumnHead(models.Model):
     displayName = models.CharField("Отображаемое название", max_length=40)
-    fieldName = models.CharField("Поле", max_length=40,null=True)
+    fieldName = models.CharField("Поле", max_length=40, null=True)
     tableName = models.CharField("Имя таблицы", max_length=40)
-        
+
+class SearchResult(models.Model):
+    search_card = models.ForeignKey(SearchCard, null=True)
+    domain = models.ForeignKey(Domain)
+    pay = models.CharField("Ожидаемая Зарплата", max_length=10, default="По договоренности")
+    age = models.CharField("Возраст", max_length=10, null=True)
+    jobExp = models.CharField("Опыт работы", max_length=10, null=True)
+    lastJob = models.CharField("Последнее место работы", max_length=100, null=True)
+    jobTitle = models.CharField("Интересующая должность", max_length=200, null=True)
+    gender = models.CharField("Пол", max_length=7,  null=True)
+    url = models.URLField("Ссылка", max_length=100)
+    
+    class Meta:    
+        unique_together = (("url"),)
+    
+    
 #class ResponsibleWatching(models.Model):
 #   searchCard_id = models.ForeignKey(SearchCard)
 #   #emplay_id = models.ForeignKey(Emplay)

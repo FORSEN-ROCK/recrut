@@ -1,11 +1,13 @@
-﻿function validURL(){
+﻿
+function validURL(){
     var VRegExp = new RegExp(/\/(http.+)/);
     var noValidHref = window.location.href
     var VResult = noValidHref.match(VRegExp); 
-    var link = document.body.querySelector("input[name='link']");
+    var link = document.body.querySelector("input[name='id']");
     link.value = VResult[1];
     console.log(VResult[1]);
 }
+
 
 function getCookie(name) {
     var cookieValue = null;
@@ -69,7 +71,7 @@ function showeStatus(responseMessage){
     }
     contenerStatus.appendChild(messageElement);
 }
-document.addEventListener("DOMContentLoaded", validURL);
+//document.addEventListener("DOMContentLoaded", validURL);
 
 document.addEventListener("click",function(event){
             var target = event.target;

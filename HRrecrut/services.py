@@ -3,7 +3,7 @@ from urllib.parse   import quote
 from bs4 import BeautifulSoup
 import lxml
 import requests
-from .models import Domain, SearchObject, VailidValues, SchemaParsing, Expression, Credentials, RequestHeaders, SessionData, CredentialsData, ResumeLink
+from .models import Domain, SearchObject, VailidValues, SchemaParsing, Expression, Credentials, RequestHeaders, SessionData, CredentialsData, ResumeLink, SearchResult
 from random import random
 from re import findall
 
@@ -320,9 +320,10 @@ class OrigenRequest(object):
             return outContent
         
 class OriginParsing(object):
-    def __init__(self,domain,limit,context):
+    def __init__(self, domain, limit, context, search_card=None):
         self.domain = domain
         self.context = context
+        self.search_card = search_card
         self.__limit__ = int(limit)
         self.countResume = 0
         self.__notFound__ = None
@@ -416,7 +417,6 @@ class OriginParsing(object):
         return parameter
     
     def parsingResume(self, responseContent):
-        ##print('enter>>')
         tree = BeautifulSoup(responseContent,'html.parser')
         resultList = []  
         pastRecord = 0 #Счетчик просмотренных резюме
@@ -424,10 +424,9 @@ class OriginParsing(object):
         if(not notFound):
             resumes = tree.findAll(self.__bodyResponse__.tagName,{self.__bodyResponse__.attrName : self.__bodyResponse__.attrVal})
             for resumeItem in resumes:
-                ##if(not resumeItem):
-                    ##print('resumeItem>>',resumeItem)
                 ##перебор резюме
-                resumeRecord = ResumeMeta(self.domain)
+                ##resumeRecord = ResumeMeta(self.domain)
+                record = {}
                 for rowParse in self.__schema__:
                     ##Перебор по строкам схемы парсера
                     for itemOper in rowParse:
@@ -435,8 +434,6 @@ class OriginParsing(object):
                         if(type(itemOper) is SchemaParsing):
                             parameter = self.parser(itemOper, resumeItem)
                             if((itemOper.target != 'origenLink')and parameter):
-                                ##print('itemOper.target>>',itemOper.target)
-                                ##print('parameter>>',parameter)
                                 parameter = parameter.get_text()
                             elif(parameter):
                                 parameter = parameter['href']
@@ -444,40 +441,47 @@ class OriginParsing(object):
                             parameter = self.executeExpression(itemOper, parameter)
                     
                     if(type(itemOper) is SchemaParsing):
-                        resumeRecord.setAttr(itemOper.target, parameter)
+                        ##resumeRecord.setAttr(itemOper.target, parameter)
+                        record.setdefault(itemOper.target, parameter)
                     else:
-                        resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
+                        ##resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
+                        record.setdefault(itemOper.SchemaParsing.target, parameter)
                     ##resumeRecord.setAttr(itemOper.target, parameter)
 
                     if(type(itemOper) is SchemaParsing):
-                        resumeRecord.setAttr(itemOper.target, parameter)
+                        ##resumeRecord.setAttr(itemOper.target, parameter)
+                        print('itemOper.target>>',itemOper.target)
+                        record.setdefault(itemOper.target, parameter)
                     else:
-                        resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
-
-                    resumeRecord.createLink()
-                ##checkUrl = findall(r'.+\?',resumeRecord.previewLink)
-                ##print('checkUrl>>',checkUrl)
-                ##checkUrl = checkUrl[0].replace('?','/')
+                        ##resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
+                        record.setdefault(itemOper.SchemaParsing.target, parameter)
+                print('>>',record.get('origenLink'))
+                previewLink = self.domain.rootUrl + record.get('origenLink')
+                record.setdefault('URL', previewLink)
                 
-                check = ResumeLink.objects.filter(url=resumeRecord.previewLink).count()
+                check_link = ResumeLink.objects.filter(url=record.get('URL')).count()
+                check_result = SearchResult.objects.filter(url=record.get('URL')).count()##Не совсем уместно URL унекалин 
                 
-                ##print('check >>',check)
-                if(not check):
-                    ##print('>>',checkUrl)
-                    ##print('>>in!!')
-                    resultList.append(resumeRecord)
+                print('check_result>>',check_result)
+                
+                if not check_result:
+                    search_record = SearchResult.objects.create(search_card=self.search_card, domain=self.domain, pay=record.get('pay'), age=record.get('age'), 
+                    jobExp=record.get('jobExp'), lastJob=record.get('lastJob'), jobTitle=record.get('jobTitle'), gender=record.get('gender'), url=record.get('URL'))
+                    
+                    search_record.save()
+                else:
+                    search_record = SearchResult.objects.get(url=record.get('URL'))
+                    
+                if not check_link:
+                    resultList.append(search_record)
                     self.countResume += 1
                 else:
-                    print('>>',resumeRecord)
+                    print('>>',record)
                 pastRecord += 1
                 
-                ##print('pastRecord>>',pastRecord,'countResume>>',self.countResume)
-                
                 if(pastRecord == self.domain.itemRecord or self.countResume == self.__limit__):
-                    ##print('countResume>>',self.countResume)
                     return resultList
         else:
-            ##print('446 >>', 'notFound!')
             return None
 
 

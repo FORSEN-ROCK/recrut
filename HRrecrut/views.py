@@ -7,7 +7,7 @@ from .models import Resume, ResumeLink, TableColumnHead
 from django.http import JsonResponse
 import datetime
 import re
-from .models import Domain, SearchObject, VailidValues, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData, SearchCard, list_of_value
+from .models import Domain, SearchObject, VailidValues, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData, SearchCard, list_of_value, SearchResult
 from .services import LoginServer
 import json
 from django.forms.models import BaseModelFormSet, modelformset_factory
@@ -68,14 +68,17 @@ def searchOrigen(request):
         form.is_valid()
         dataParm = {key.lower() : data[key] for key in data}
         source = request.GET.get('source')
-        limit = 20##int(data['limit'])
+        limit = 20
+        
+        if request.GET.get('task_id'):
+            search_card = SearchCard.objects.get(id=request.GET.get('task_id'))
+        else:
+            search_card = None
         
         if(source == 'all'):
             domainList = [item.name for item in list_of_value.objects.filter(type='SOURCE_LIST') if item.name != 'all']
-            ##print('>>', domainList)
         else:
             domainList = source.split(',')
-        ##print('>>',request.GET.get('source'))
 
         
         if(not domainList):
@@ -91,7 +94,7 @@ def searchOrigen(request):
         
         for domainName in domainList:
             domain = Domain.objects.get(domainName=domainName, inactive=False)
-            parser = OriginParsing(domain,limit,"SEARCH")
+            parser = OriginParsing(domain, limit, "SEARCH", search_card)
             parser.generalSchem()
             parser.setErrorTarget()
             parser.setBodyResponceTarget()
@@ -99,8 +102,7 @@ def searchOrigen(request):
             linkOrigen.createSearchLink(dataParm, data)
             requestOrig = OrigenRequest(domain,linkOrigen)
             while(parser.countResume < limit):
-                ##print('emptyCount>>',emptyCount)
-                ##print('countResume>>',parser.countResume)
+            
                 requestTree = requestOrig.request()
                 requestItem = parser.parsingResume(requestTree)
                 
@@ -111,7 +113,6 @@ def searchOrigen(request):
                 
                 if(emptyCount > 5):
                     errorMessage = 'В настоящее время сервер %s недоступен по техническим пречинам' % domain.domainName
-                    ##print(errorMessage)
                     errorStack.append(errorMessage)
                     break
                     
@@ -124,11 +125,16 @@ def searchOrigen(request):
 ##Сделать нормално tree - это не bf дерево, это контент ответа на запрос
         
         
-def parsingOrigen(request, absResumeLink):
+def parsingOrigen(request, resume_id):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
     
+    resume_record = SearchResult.objects.get(id=resume_id)
+    absResumeLink = resume_record.url
+    
+    print('-----------------------------')
     print('absResumeLink>>',absResumeLink)
+    print('-----------------------------')
     
     if(absResumeLink == None):
         return render(request, 'blog/404.html') ## not found 404
@@ -142,7 +148,7 @@ def parsingOrigen(request, absResumeLink):
     parser.generalSchem()
     parser.setErrorTarget()
     linkOrigen = OrigenUrl(domain=domain)
-    print(absResumeLink)
+    ##print(absResumeLink)
     linkOrigen.setUrlOrPattern(absResumeLink)
     requestOrig = OrigenRequest(domain,linkOrigen)
     requestContent = requestOrig.request()
@@ -154,7 +160,7 @@ def parsingOrigen(request, absResumeLink):
     else:
         form = PasingForm(resumeData)
         
-    return render(request, 'blog/resume_pars.html', {'form' : form, 'resumeBody' : requestContent}) 
+    return render(request, 'blog/resume_pars.html', {'form': form, 'resumeBody': requestContent, 'link': absResumeLink}) 
 
 def saveResume(data):
     if(data['command'] == "save"):
@@ -207,15 +213,11 @@ def showeLink(request, idRecord=0):
 def incomingTreatment(request):
     if(request.is_ajax()):
         data = json.loads(request.body.decode())
-        ##print(data['view'])
-        ##print(data['command'])
     if(data['view'] == "showeResumes"):
         pass
     elif(data['view'] == "showeLink"):
         pass
     elif(data['view'] == "parsingOrigen"):
-        ##print('in!!!!!!!')
-        ##print(data)
         return saveResume(data)
     return JsonResponse({'status': 'successfully'})
     
@@ -235,5 +237,4 @@ def searchForTask(request, idTask=0):
     
     search_task = SearchCard.objects.get(id=idTask)
     search_form = SearchForm(search_task.__dict__)
-    ##search_task = {key: task.__dict__}
-    return render(request, 'blog/search_form.html', {'form' : search_form})
+    return render(request, 'blog/search_form.html', {'form' : search_form, 'task_id': idTask})

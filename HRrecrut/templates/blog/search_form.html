@@ -12,6 +12,7 @@
     <h1>Поиск резюме:</h1>
     <div>
         <form action="/search/result/" method="GET">
+            <input type="hidden" name="task_id" value={{ task_id }} />
             {% csrf_token %}
             <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
             <div class="row">

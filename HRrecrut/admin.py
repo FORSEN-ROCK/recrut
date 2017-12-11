@@ -30,9 +30,14 @@ class ExpressionAdmin(admin.ModelAdmin):
 
 class SearchCardAdmin(admin.ModelAdmin):
     list_display = ('text','ageFrom','ageTo','salaryFrom','salaryTo','gender')
+
+class SearchResultAdmin(admin.ModelAdmin): 
+    list_display = ('search_card', 'domain', 'pay', 'age', 'jobExp', 'lastJob', 'jobTitle', 'gender', 'url')
+    search_fields = ('search_card','domain')
     
 class TableColumnHeadAdmin(admin.ModelAdmin):
     list_display = ('displayName','fieldName','tableName')
+    
 # Register your models here.
 
 admin.site.register(list_of_value, list_of_valueAdmin)
@@ -48,4 +53,5 @@ admin.site.register(SessionData)
 admin.site.register(SearchCard, SearchCardAdmin)
 admin.site.register(Resume, ResumeAdmin)
 admin.site.register(ResumeLink, ResumeLinkAdmin)
+admin.site.register(SearchResult, SearchResultAdmin)
 admin.site.register(TableColumnHead, TableColumnHeadAdmin)

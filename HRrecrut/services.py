@@ -81,7 +81,7 @@ class LoginServer(object):
             
             for itemAuth in self.__authData__:
                 if(not itemAuth.value):
-                    itemAuth.value = securityTokin[itemAuth.name]
+                    itemAuth.value = securityTokin.get(itemAuth.name)
             
             authData = {item.name : item.value for item in self.__authData__}
             loginPost = requests.Request("POST", self.__credentialsOrigen__.loginLink, data=authData)
@@ -368,7 +368,7 @@ class OriginParsing(object):
                             
                 elif(schema_parsing.sequens):
                     listTags = tree.findAll(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
-                    if(len(listTags) >= schema_parsing.sequens - 1):
+                    if(len(listTags) > schema_parsing.sequens - 1): ##изменил >= на >
                         return listTags[schema_parsing.sequens - 1]
                     else:
                         return None
@@ -384,7 +384,7 @@ class OriginParsing(object):
                             
                 elif(schema_parsing.sequens):
                     listTags = tree.findAll(schema_parsing.tagName, {schema_parsing.attrName : schema_parsing.attrVal})
-                    if(len(listTags) >= schema_parsing.sequens - 1):
+                    if(len(listTags) > schema_parsing.sequens - 1): ##изменил >= на >
                         return listTags[schema_parsing.sequens - 1]
                     else:
                         return None

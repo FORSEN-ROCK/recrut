@@ -68,13 +68,17 @@ def searchOrigen(request):
         form.is_valid()
         dataParm = {key.lower() : data[key] for key in data}
         source = request.GET.get('source')
+        task_id = request.GET.get('task_id')
         limit = 20
         
-        if request.GET.get('task_id'):
-            search_card = SearchCard.objects.get(id=request.GET.get('task_id'))
+        if task_id != '/' and task_id != None and task_id != '':
+            print('>>', request.GET.get('task_id'))
+            search_card = SearchCard.objects.filter(id=request.GET.get('task_id'))
         else:
-            search_card = None
-        
+            search_card = SearchCard.objects.create(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
+            salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])##None
+            search_card.save()
+            
         if(source == 'all'):
             domainList = [item.name for item in list_of_value.objects.filter(type='SOURCE_LIST') if item.name != 'all']
         else:

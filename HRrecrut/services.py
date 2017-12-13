@@ -450,28 +450,28 @@ class OriginParsing(object):
 
                     if(type(itemOper) is SchemaParsing):
                         ##resumeRecord.setAttr(itemOper.target, parameter)
-                        print('itemOper.target>>',itemOper.target)
+                        ##print('itemOper.target>>',itemOper.target)
                         record.setdefault(itemOper.target, parameter)
                     else:
                         ##resumeRecord.setAttr(itemOper.SchemaParsing.target, parameter)
                         record.setdefault(itemOper.SchemaParsing.target, parameter)
-                print('>>',record.get('origenLink'))
+                ##print('>>',record.get('origenLink'))
                 previewLink = self.domain.rootUrl + record.get('origenLink')
                 record.setdefault('URL', previewLink)
                 
-                check_link = ResumeLink.objects.filter(url=record.get('URL')).count()
                 check_result = SearchResult.objects.filter(url=record.get('URL')).count()##Не совсем уместно URL унекалин 
                 
-                print('check_result>>',check_result)
-                
                 if not check_result:
+                    print('self.search_card>>', self.search_card)
                     search_record = SearchResult.objects.create(search_card=self.search_card, domain=self.domain, pay=record.get('pay'), age=record.get('age'), 
                     jobExp=record.get('jobExp'), lastJob=record.get('lastJob'), jobTitle=record.get('jobTitle'), gender=record.get('gender'), url=record.get('URL'))
                     
                     search_record.save()
                 else:
                     search_record = SearchResult.objects.get(url=record.get('URL'))
-                    
+                
+                check_link = ResumeLink.objects.filter(url=search_record.url).count()
+                
                 if not check_link:
                     resultList.append(search_record)
                     self.countResume += 1

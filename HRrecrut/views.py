@@ -15,7 +15,6 @@ from django.forms.models import BaseModelFormSet, modelformset_factory
 
 def Test(request):
     ResumeFormSet = modelformset_factory(Resume, form=ResumeForm)
-    #formset = ResumeFormSet(
     return render(request, 'blog/test.html', { 'formset' : ResumeFormSet })
     
 def authorization(request):
@@ -71,13 +70,18 @@ def searchOrigen(request):
         task_id = request.GET.get('task_id')
         limit = 20
         
-        if task_id != '/' and task_id != None and task_id != '':
-            print('>>', request.GET.get('task_id'))
-            search_card = SearchCard.objects.filter(id=request.GET.get('task_id'))
+        if((task_id is not None) and (task_id != '')):
+            search_card = SearchCard.objects.filter(id=task_id)
         else:
-            search_card = SearchCard.objects.create(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
-            salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])##None
-            search_card.save()
+            query = SearchCard.objects.filter(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
+            salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])
+            
+            if query.count() == 0:
+                search_card = SearchCard.objects.create(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
+                salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])##None
+                search_card.save()
+            else:
+                search_card = query[0]
             
         if(source == 'all'):
             domainList = [item.name for item in list_of_value.objects.filter(type='SOURCE_LIST') if item.name != 'all']
@@ -89,8 +93,7 @@ def searchOrigen(request):
             errorMessage = "Произошла ошибка! Не был задан источник резюме"
             errorStack.append(errorMessage)
             return render(request, 'blog/search_response.html', {'form': form, 'errors': errorStack})
-        ##else:
-        ##    domainList = domainList.split(',')
+
             
         ##По идее эта штука должна выполняться параллельно
         requestList = []
@@ -98,27 +101,34 @@ def searchOrigen(request):
         
         for domainName in domainList:
             domain = Domain.objects.get(domainName=domainName, inactive=False)
-            parser = OriginParsing(domain, limit, "SEARCH", search_card)
-            parser.generalSchem()
-            parser.setErrorTarget()
-            parser.setBodyResponceTarget()
-            linkOrigen = OrigenUrl(domain=domain)
-            linkOrigen.createSearchLink(dataParm, data)
-            requestOrig = OrigenRequest(domain,linkOrigen)
-            while(parser.countResume < limit):
+            query_result = SearchResult.objects.filter(search_card=search_card, domain=domain)##added=False, hidden=False)
             
-                requestTree = requestOrig.request()
-                requestItem = parser.parsingResume(requestTree)
-                
-                if(requestItem):
-                    requestList += requestItem
-                else:
-                    emptyCount += 1
-                
-                if(emptyCount > 5):
-                    errorMessage = 'В настоящее время сервер %s недоступен по техническим пречинам' % domain.domainName
-                    errorStack.append(errorMessage)
-                    break
+            if query_result.count() == 0:
+                parser = OriginParsing(domain, limit, "SEARCH", search_card)
+                parser.generalSchem()
+                parser.setErrorTarget()
+                parser.setBodyResponceTarget()
+                linkOrigen = OrigenUrl(domain=domain)
+                linkOrigen.createSearchLink(dataParm, data)
+                requestOrig = OrigenRequest(domain,linkOrigen)
+                while(parser.countResume < limit):
+                    
+                    requestTree = requestOrig.request()
+                    print('------------------')
+                    requestItem = parser.parsingResume(requestTree)
+                    
+                    if(requestItem):
+                        requestList += requestItem
+                    else:
+                        emptyCount += 1
+                    
+                    if(emptyCount > 5):
+                        errorMessage = 'В настоящее время сервер %s недоступен по техническим пречинам' % domain.domainName
+                        errorStack.append(errorMessage)
+                        break
+            
+            else:
+                requestList += query_result[:limit]
                     
         return  render(request, 'blog/search_response.html', {'form': form, 'resumeList': requestList, 'errors': errorStack})
         
@@ -136,10 +146,6 @@ def parsingOrigen(request, resume_id):
     resume_record = SearchResult.objects.get(id=resume_id)
     absResumeLink = resume_record.url
     
-    print('-----------------------------')
-    print('absResumeLink>>',absResumeLink)
-    print('-----------------------------')
-    
     if(absResumeLink == None):
         return render(request, 'blog/404.html') ## not found 404
     
@@ -152,7 +158,6 @@ def parsingOrigen(request, resume_id):
     parser.generalSchem()
     parser.setErrorTarget()
     linkOrigen = OrigenUrl(domain=domain)
-    ##print(absResumeLink)
     linkOrigen.setUrlOrPattern(absResumeLink)
     requestOrig = OrigenRequest(domain,linkOrigen)
     requestContent = requestOrig.request()
@@ -178,11 +183,9 @@ def saveResume(data):
             status = 'Success'
         else:
             if(checkPerson):
-                ##print('checkPerson>>',checkPerson[0].firstName)
-                resumeRecord = checkPerson[0]##Resume.objects.get(id=checkPerson[0])
+                resumeRecord = checkPerson[0]
             else:
-                ##print('checkPhone>>',checkPhone[0].firstName)
-                resumeRecord = checkPhone[0]##Resume.objects.get(id=checkPhone[0])
+                resumeRecord = checkPhone[0]
             
             resumeLink = ResumeLink.objects.get_or_create(resume=resumeRecord, url=data['link'])
             status = 'Update link'

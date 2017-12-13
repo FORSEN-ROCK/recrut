@@ -181,7 +181,9 @@ class SearchCard(models.Model):
     salaryTo = models.CharField("Зарплата до", max_length=7)
     gender = models.CharField("Пол", max_length=7,choices=GENDER_CHOICES)
     ##experience = models.CharField("Требуемый опыт работы", max_length=7)
-
+    
+    class Meta:
+        unique_together = (("text", "ageFrom", "ageTo", "salaryFrom", "salaryTo", "gender"),)
 
 class Resume(models.Model):
     firstName = models.CharField("Имя", max_length=50)
@@ -210,8 +212,8 @@ class TableColumnHead(models.Model):
     tableName = models.CharField("Имя таблицы", max_length=40)
 
 class SearchResult(models.Model):
-    search_card = models.ForeignKey(SearchCard, null=True)
-    domain = models.ForeignKey(Domain)
+    search_card = models.ForeignKey(SearchCard, null=True)##
+    domain = models.ForeignKey(Domain)##
     pay = models.CharField("Ожидаемая Зарплата", max_length=10, default="По договоренности")
     age = models.CharField("Возраст", max_length=10, null=True)
     jobExp = models.CharField("Опыт работы", max_length=10, null=True)

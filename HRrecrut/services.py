@@ -302,22 +302,19 @@ class OrigenRequest(object):
             ##    print('>>Not connect!!<<')
         if(self.link.pattern):
             searchLink = self.link.nextOrStartIteration()
-            print('searchLink>>',searchLink)
         else:
             searchLink = self.link.getUrl()
-                
+        
         try:
-            ##print('Enter-request>>')
-            ##print('Session-cookies>>',self.__auth__.authSession.cookies.get_dict())
             connectRequest = requests.Request('GET',searchLink)
             connectSession = self.__auth__.authSession.prepare_request(connectRequest)
             content = self.__auth__.authSession.send(connectSession)
-        finally:
             outContent = content.text
             content.close()
-            ##if(outContent):
-            ##    print('>>not free<<')
-            return outContent
+        except UnboundLocalError:
+            outContent = None
+
+        return outContent
         
 class OriginParsing(object):
     def __init__(self, domain, limit, context, search_card=None):
@@ -417,6 +414,9 @@ class OriginParsing(object):
         return parameter
     
     def parsingResume(self, responseContent):
+        if responseContent is None:
+            return None
+              
         tree = BeautifulSoup(responseContent,'html.parser')
         resultList = []  
         pastRecord = 0 #Счетчик просмотренных резюме

@@ -48,8 +48,17 @@
                 <div class="span4">{{  form.education }}</div>
                 <div class="span4">{{  form.experience }}</div>
             </div>
+            <fieldset>
+                <div class="row">
+                    <div class="span4">
+                        Есть авто:
+                        <input type="checkbox" name="auto_flg">
+                    </div>
+                </div>
+            </fieldset>
         </form>
         <button name="save" data-save="true" id="save">Сохранить</button>
+        <!--button name="exclude" id="exclude ">Исключить из поиска</button-->
     </div>
 {% endblock %}
 {% block win %}

@@ -1,5 +1,5 @@
 ﻿import urllib.request as urllib
-from urllib.parse   import quote
+from urllib.parse import quote
 from bs4 import BeautifulSoup
 import lxml
 import requests
@@ -180,9 +180,9 @@ class OrigenUrl(object):
         self.pattern = None
         
     def setDomain(self, domainName=None):
-        if((not self.__url__) and  DomainName):
+        if((not self.__url__) and domainName):
             self.__domain__ = Domain.objects.get(domainName=domainName)
-        if(self.__url__ and (not DomainName)):
+        if(self.__url__ and (not domainName)):
             domainName = findall(r'\w{0,4}\.?\w+\.ru', self.__url__)
             self.__domain__ = Domain.objects.get(domainName=domainName)
         else:

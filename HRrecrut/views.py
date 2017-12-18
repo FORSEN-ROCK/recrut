@@ -1,17 +1,17 @@
-﻿from django.shortcuts import render, redirect
-from django.conf import settings
-from .forms import AuthorizationForm, SearchForm, PasingForm, ResumeForm, ResumeRecord
-from .services import OriginParsing, OrigenUrl, OrigenRequest ##SearchingService, ResumeParsService
-from django.contrib.auth import authenticate, login
-from .models import Resume, ResumeLink, TableColumnHead
-from django.http import JsonResponse
-import datetime
+﻿import datetime
 import re
-from .models import Domain, SearchObject, VailidValues, SchemaParsing, Credentials, RequestHeaders, SessionData, CredentialsData, SearchCard, list_of_value, SearchResult
-from .services import LoginServer
 import json
+from django.shortcuts import render, redirect
+from django.conf import settings
+from django.contrib.auth import authenticate, login
+from django.http import JsonResponse
 from django.forms.models import BaseModelFormSet, modelformset_factory
+from .models import *
+from .forms import *
+from .services import *
+from .data_transfer import *
 
+#from .models import Resume, ResumeLink, TableColumnHead
 
 def Test(request):
     ResumeFormSet = modelformset_factory(Resume, form=ResumeForm)
@@ -62,7 +62,15 @@ def searchOrigen(request):
         
     if(request.method == "GET"):
         errorStack = []
-        data = {key : request.GET.get(key) for key in ('text','ageTo','ageFrom','salaryTo','salaryFrom', 'gender', 'searchMode')} ##limit, itemPage
+        data = {key : request.GET.get(key) for key in ('text',
+                                                      'ageTo',
+                                                      'ageFrom',
+                                                      'salaryTo',
+                                                      'salaryFrom', 
+                                                      'gender', 
+                                                      'searchMode'
+                                                      )
+                }
         form = SearchForm(data)
         form.is_valid()
         dataParm = {key.lower() : data[key] for key in data}
@@ -73,18 +81,30 @@ def searchOrigen(request):
         if((task_id is not None) and (task_id != '')):
             search_card = SearchCard.objects.filter(id=task_id)
         else:
-            query = SearchCard.objects.filter(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
-            salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])
+            query = SearchCard.objects.filter(text=data['text'], 
+                                              ageFrom=data['ageFrom'],
+                                              ageTo=data['ageTo'], 
+                                              salaryFrom=data['salaryFrom'],
+                                              salaryTo=data['salaryTo'], 
+                                              gender=data['gender'])
             
             if query.count() == 0:
-                search_card = SearchCard.objects.create(text=data['text'], ageFrom=data['ageFrom'], ageTo=data['ageTo'], 
-                salaryFrom=data['salaryFrom'], salaryTo=data['salaryTo'], gender=data['gender'])##None
+                search_card = SearchCard.objects.create(
+                    text=data['text'], 
+                    ageFrom=data['ageFrom'],
+                    ageTo=data['ageTo'], 
+                    salaryFrom=data['salaryFrom'], 
+                    salaryTo=data['salaryTo'], 
+                    gender=data['gender'])
                 search_card.save()
             else:
                 search_card = query[0]
             
         if(source == 'all'):
-            domainList = [item.name for item in list_of_value.objects.filter(type='SOURCE_LIST') if item.name != 'all']
+            domainList = [item.name for item in list_of_value.objects.filter(
+                                                    type='SOURCE_LIST') 
+                                                    if item.name != 'all'
+                                                    ]
         else:
             domainList = source.split(',')
 
@@ -123,7 +143,7 @@ def searchOrigen(request):
                         emptyCount += 1
                     
                     if(emptyCount > 5):
-                        errorMessage = 'В настоящее время сервер %s недоступен по техническим пречинам' % domain.domainName
+                        errorMessage = 'В настоящее время сервер %s недоступен по техническим причинам' % domain.domainName
                         errorStack.append(errorMessage)
                         break
             
@@ -173,13 +193,37 @@ def parsingOrigen(request, resume_id):
 
 def saveResume(data):
     if(data['command'] == "save"):
-        checkPerson = Resume.objects.filter(firstName=data['firstName'], lastName=data['lastName'], middleName=data['middleName'], phone=data['phone'])
-        checkPhone = Resume.objects.filter(phone=data['phone'], email=data['email'])
+        checkPerson = Resume.objects.filter(firstName=data['firstName'],
+                                            lastName=data['lastName'],
+                                            middleName=data['middleName'],
+                                            phone=data['phone'])
+        checkPhone = Resume.objects.filter(phone=data['phone'],
+                                           email=data['email'])
         if((not checkPerson) and (not checkPhone)):
-            resumeRecord = Resume.objects.create(firstName=data['firstName'],lastName=data['lastName'],middleName=data['middleName'],gender=data['gender'],phone=data['phone'],email=data['email'],location=data['location'],education=data['education'],experience=data['experience'])#data)
+            resumeRecord = Resume.objects.create(firstName=data['firstName'],
+                                                 lastName=data['lastName'],
+                                                 middleName=data['middleName'],
+                                                 gender=data['gender'],
+                                                 phone=data['phone'],
+                                                 email=data['email'],
+                                                 location=data['location'],
+                                                 education=data['education'],
+                                                 experience=data['experience'])#data)
             resumeRecord.save()
             resumeLink = ResumeLink.objects.create(resume=resumeRecord, url=data['link'])
             resumeLink.save()
+            '''
+            save_candidate(education=data['education'],
+                           email=data['email'],
+                           experience=data['experience'],
+                           first_name=data['firstName'],
+                           gender=data['gender'],
+                           last_name=data['lastName'],
+                           mid_name=data['middleName'],
+                           phone=data['phone'],
+                           region=data['location'],
+                           auto_flg='N')
+            '''
             status = 'Success'
         else:
             if(checkPerson):

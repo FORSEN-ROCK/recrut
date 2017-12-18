@@ -45,12 +45,16 @@ function complileSaveData() {
     var fields = document.body.querySelector('form');
     var VIEW_NAME = document.querySelector("input[name='view_name']").value;
     var linkResume = document.querySelector("input[name='link']").value;
+    var checkbox = document.querySelector("input[name='auto_flg']")
+    var auto_flg = checkbox.checked ? 'Y' : 'N';
     var fieldsData = {view : VIEW_NAME, link : linkResume};
     for(var i=0; i < fields.elements.length; i++){
-        if(fields.elements[i].type != "hidden"){
+        if(fields.elements[i].type != "hidden" && 
+                fields.elements[i].type != "checkbox"){
             fieldsData[fields.elements[i].name] = fields.elements[i].value;
         }
     }
+    fieldsData['auto_flg'] = auto_flg;
     return fieldsData;
 }
 

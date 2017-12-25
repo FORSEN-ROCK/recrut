@@ -1,6 +1,21 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 # Create your models here.
+MOSCOW = 'Москва'
+SAINT_PETERSBURG = 'Санкт-Петербург'
+ROSTOV_ON_DON = 'Ростов на Дону'
+KRASNODAR = 'Краснодар'
+EKATERINBURG = 'Екатеринбург'
+CITY_CHOICES = (
+    (MOSCOW, 'Москва'),
+    (SAINT_PETERSBURG, 'Санкт-Петербург'),
+    (ROSTOV_ON_DON, 'Ростов на Дону'),
+    (KRASNODAR, 'Краснодар'),
+    (EKATERINBURG, 'Екатеринбург'),
+)
+
+
 
 class Domain(models.Model):
     domainName = models.CharField("Домен",max_length=100)
@@ -175,29 +190,32 @@ GENDER_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filte
 
 class SearchCard(models.Model):
     text = models.CharField("Вакансия", max_length=100)
-    ageFrom = models.CharField("Возраст от", max_length=2)
-    ageTo = models.CharField("Возраст до", max_length=2)
-    salaryFrom = models.CharField("Зарплата от", max_length=7)
-    salaryTo = models.CharField("Зарплата до", max_length=7)
-    gender = models.CharField("Пол", max_length=7,choices=GENDER_CHOICES)
+    #ageFrom = models.CharField("Возраст от", max_length=2)
+    #ageTo = models.CharField("Возраст до", max_length=2)
+    #salaryFrom = models.CharField("Зарплата от", max_length=7)
+    #salaryTo = models.CharField("Зарплата до", max_length=7)
+    #gender = models.CharField("Пол", max_length=7,choices=GENDER_CHOICES)
+    city = models.CharField("Город", max_length=50, choices=CITY_CHOICES,
+                            default=MOSCOW)
     ##experience = models.CharField("Требуемый опыт работы", max_length=7)
     
     class Meta:
-        unique_together = (("text", "ageFrom", "ageTo", "salaryFrom", "salaryTo", "gender"),)
+        unique_together = (("text", "city"),)
 
 class Resume(models.Model):
-    firstName = models.CharField("Имя", max_length=50)
-    lastName = models.CharField("Фамилия", max_length=50)
-    middleName = models.CharField("Отчество", max_length=50)
+    first_name = models.CharField("Имя", max_length=50)
+    last_name = models.CharField("Фамилия", max_length=50)
+    middle_name = models.CharField("Отчество", max_length=50)
     gender = models.CharField("Пол", max_length=7, choices=GENDER_CHOICES)
     phone = models.CharField("Тел.", max_length=12)
     email = models.CharField("Эл.Почта", max_length=50)
-    location = models.CharField("Регион", max_length=100)
+    city = models.CharField("Регион", max_length=100)
     education = models.CharField("Образование", max_length=100)
     experience = models.CharField("Опыт работы", max_length=50)
+    user = models.ForeignKey(User, default=1)
 
     class Meta:
-        unique_together = (("firstName","lastName","middleName","email"),)      
+        unique_together = (("first_name","last_name","middle_name","email"),)      
    
 class ResumeLink(models.Model):
     url = models.URLField(max_length=100)
@@ -211,22 +229,143 @@ class TableColumnHead(models.Model):
     fieldName = models.CharField("Поле", max_length=40, null=True)
     tableName = models.CharField("Имя таблицы", max_length=40)
 
+
+#class UserManager(models.Manager):
+        
+    
+class SearchPattern(models.Model):
+    NEVER_MIND = 'all'
+    MAN = 'man'
+    FEMALE = 'female'
+    GENDER_CHOICES = (
+        (NEVER_MIND, 'Неважно'),
+        (MAN, 'Мужской'),
+        (FEMALE, 'Женский'),        
+    )
+    ALL_TEXT = 'All text'
+    IN_TITLE = 'In title'
+    KEY_WORDS = 'Key Words'
+    MODE_CHOICES = (
+        (ALL_TEXT, 'По всему тексту'),
+        (IN_TITLE, 'В название резюме'),
+        (KEY_WORDS, 'По ключевым словам '),
+    )
+    '''
+    MOSCOW = 'Москва'
+    SAINT_PETERSBURG = 'Санкт-Петербург'
+    ROSTOV_ON_DON = 'Ростов на Дону'
+    KRASNODAR = 'Краснодар'
+    EKATERINBURG = 'Екатеринбург'
+    CITY_CHOICES = (
+        (MOSCOW, 'Москва'),
+        (SAINT_PETERSBURG, 'Санкт-Петербург'),
+        (ROSTOV_ON_DON, 'Ростов на Дону'),
+        (KRASNODAR, 'Краснодар'),
+        (EKATERINBURG, 'Екатеринбург'),
+    )
+    '''
+    query_text = models.CharField("Вакансия", max_length=100)
+    age_from = models.CharField("Возраст от", max_length=2, null=True)
+    age_to = models.CharField("Возраст до", max_length=2, null=True)
+    salary_from = models.CharField("Зарплата от", max_length=7, null=True)
+    salary_to = models.CharField("Зарплата до", max_length=7, null=True)
+    source = models.ForeignKey(Domain)
+    user = models.ForeignKey(User)
+    #task = models.ForeignKey(SearchTask)
+    city = models.CharField("Город", max_length=50, choices=CITY_CHOICES,
+                            default=MOSCOW)
+    gender = models.CharField("Пол", max_length=7, choices=GENDER_CHOICES,
+        default=NEVER_MIND)
+    mode = models.CharField("Режим поиска", max_length=10, 
+                            choices=MODE_CHOICES,default=ALL_TEXT)
+
+class SearchManager(models.Manager):
+    def search(self, query_text, city, mode, 
+               source=None, gender=None, experience=None,
+               age_from=None, age_to=None, 
+               salary_from=None, salary_to=None):
+        try:
+            query = self.filter(title_resume__contains=query_text, 
+                                city=city, mode=mode, ignore=False)
+        except:
+            pass
+        
+        if source is not None:
+            query = query.filter(source=source)
+        if gender is not None:
+            query = query.filter(gender=gender)
+        if experience is not None:
+            query = query.filter(experience=experience)
+            
+        if(age_from is not None) and (age_to is not None):
+            query = query.filter(age__range=(age_from, age_to))
+        elif(age_from is not None) and (age_to is None):
+            query = query.filter(age__range=(age_from, '100'))
+        elif(age_from is None) and (age_to is not None):
+            query = query.filter(age_range=('0', age_to))
+        
+        if(salary_from is not None) and (salary_to is not None):
+            query = query.filter(salary__range=(salary_from, salary_to))
+        elif(salary_from is not None) and (salary_to is None):
+            print(salary_from,salary_to)
+            query = query.filter(salary__range=(salary_from, '1000000'))
+        elif(salary_from is None) and (salary_to is not None):
+            query = query.filter(salary__range=('0', salary_to))
+        
+        return query
+        
+    def favorites(self, user):
+        return self.filter(elected=user)
+        
 class SearchResult(models.Model):
-    search_card = models.ForeignKey(SearchCard, null=True)##
-    domain = models.ForeignKey(Domain)##
-    pay = models.CharField("Ожидаемая Зарплата", max_length=10, default="По договоренности")
+    ALL_TEXT = 'All text'
+    IN_TITLE = 'In title'
+    KEY_WORDS = 'Key Words'
+    MODE_CHOICES = (
+        (ALL_TEXT, 'По всему тексту'),
+        (IN_TITLE, 'В название резюме'),
+        (KEY_WORDS, 'По ключевым словам '),
+    )
+    #search_card = models.ForeignKey(SearchCard, null=True)##
+    #pattern = models.ForeignKey(SearchPattern, default=1)
+    source = models.ForeignKey(Domain)##
+    salary = models.CharField("Ожидаемая Зарплата", max_length=10, 
+                            default="По договоренности")
     age = models.CharField("Возраст", max_length=10, null=True)
-    jobExp = models.CharField("Опыт работы", max_length=10, null=True)
-    lastJob = models.CharField("Последнее место работы", max_length=100, null=True)
-    jobTitle = models.CharField("Интересующая должность", max_length=200, null=True)
+    experience = models.CharField("Опыт работы", max_length=10, null=True)
+    last_job = models.CharField("Последнее место работы", max_length=100, 
+                                null=True)
+    title_resume = models.CharField("Интересующая должность", max_length=200,
+                                    null=True)
     gender = models.CharField("Пол", max_length=7,  null=True)
+    city = models.CharField("Город", max_length=50, null=True)
+    last_update = models.DateField(
+                    "Дата последнего обновление", auto_now=False)
     url = models.URLField("Ссылка", max_length=100)
+    #task = models.ForeignKey(SearchTask)
+    ignore = models.BooleanField("Игнорировать", default=False)
+    track = models.BooleanField("Отслеживать", default=False)
+    elected = models.ForeignKey(User, null=True)
+    mode = models.CharField("Режим поиска", max_length=10, 
+                            choices=MODE_CHOICES,default=ALL_TEXT)
+    objects = models.Manager()
+    search_objects = SearchManager()
     
     class Meta:    
         unique_together = (("url"),)
-    
-    
-#class ResponsibleWatching(models.Model):
+
+class TrackUpdate(models.Model):
+    update_date = models.DateField("Последнее обновление", auto_now=True)
+    value_sorce = models.CharField("Значение на источнике", max_length=10)
+    resume = models.ForeignKey(SearchResult)
+        
+#class UserSearch(models.Model):
+#    pattern = models.ForeignKey(SearchPattern)
+#    result = models.ForeignKey(SearchResult)
+#    hide = models.BooleanField("Скрыть", default=False)
+#    elected = models.BooleanField("Избранный", default=False)
+   
+        #class ResponsibleWatching(models.Model):
 #   searchCard_id = models.ForeignKey(SearchCard)
 #   #emplay_id = models.ForeignKey(Emplay)
 #   type_cd = models.CharField(max_length=12)

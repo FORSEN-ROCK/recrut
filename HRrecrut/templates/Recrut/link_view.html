@@ -1,0 +1,120 @@
+﻿{% extends 'Recrut/base.html' %}
+
+{% load staticfiles %}
+
+{% block style %}
+    <link rel="stylesheet" href="{% static 'css/base_resume.css' %}">
+{% endblock %}
+{% block script %}
+    <script src="{% static 'script/queryAll.js' %}"></script>
+{% endblock %}
+
+{% block title %}Ссылкки{% endblock %}
+
+{% block content %}
+    <div>
+        <div>
+            <!--Данные-->
+            <form>
+                    {{ form_resume.management_form }}
+                    {% for form in form_resume %}
+                        {{ form.id }}
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.first_name.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.last_name.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.middle_name.label }}
+                               </div>
+                            </div>
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.first_name }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.last_name }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.middle_name }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.gender.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.phone.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.email.label }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.gender }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.phone }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.email }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.city.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.education.label }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.experience.label }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="span3">
+                                    {{  form.city }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.education }}
+                                </div>
+                                <div class="span3">
+                                    {{  form.experience }}
+                                </div>
+                            </div>
+                    {% endfor %}
+            </form>
+        </div>
+        <div>
+            <!--div class="control_applet">
+                <!--Управление>
+                <button name="query" data-query="true" id="query">Поиск</button>
+                <button name="run" data-run="true" id="run_query" disabled>Выполнить</button>
+            </div-->
+            <div class="data_space">
+                <!--Данные-->
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <th scope="row">Ссылка</th>
+                            <th scope="row">Источник</th>
+                        </tr>
+                        {% for item in links %}
+                            <tr>
+                                <td scope="row">
+                                    <a href={{ item.url }}>
+                                        {{ item.url }}
+                                    </a>
+                                </td>
+                                <th scope="row"> </th>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

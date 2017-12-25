@@ -1,0 +1,68 @@
+﻿{% extends 'Recrut/base.html' %}
+
+{% load staticfiles %}
+
+{% block script %}
+    <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
+    <!--script src="{% static 'script/seveResume.js' %}"></script-->
+    <script src="{% static 'script/queryAll.js' %}"></script>
+{% endblock %}
+
+{% block title %}Разобор резюме{% endblock %}
+
+{% block content %}
+    <div>
+        <div id="status">
+        </div>
+        <form class="form-signin">
+            <input type="hidden" name="view_name" value="parsingOrigen"/>
+            <input type="hidden" name="link" value={{ link }} />
+            {% csrf_token %}
+            <div class="row">
+                <div class="span4">{{  form.first_fame.label }}</div>
+                <div class="span4">{{  form.last_name.label }}</div>
+                <div class="span4">{{  form.middle_name.label }}</div>
+            </div>
+            <div class="row">
+                <div class="span4">{{  form.first_name }}</div>
+                <div class="span4">{{  form.last_name }}</div>
+                <div class="span4">{{  form.middle_name }}</div>
+            </div>
+            <div class="row">
+                <div class="span4">{{  form.gender.label }}</div>
+                <div class="span4">{{  form.phone.label }}</div>
+                <div class="span4">{{  form.email.label }}</div>
+            </div>
+            <div class="row">
+                <div class="span4">{{  form.gender }}</div>
+                <div class="span4">{{  form.phone }}</div>
+                <div class="span4">{{  form.email }}</div>
+            </div>
+            <div class="row">
+                <div class="span4">{{  form.city.label }}</div>
+                <div class="span4">{{  form.education.label }}</div>
+                <div class="span4">{{  form.experience.label }}</div>
+            </div>
+            <div class="row">
+                <div class="span4">{{  form.city }}</div>
+                <div class="span4">{{  form.education }}</div>
+                <div class="span4">{{  form.experience }}</div>
+            </div>
+            <fieldset>
+                <div class="row">
+                    <div class="span4">
+                        Есть авто:
+                        <input type="checkbox" name="auto_flg">
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+        <button name="save" data-save="true" id="save">Сохранить</button>
+        <!--button name="exclude" id="exclude ">Исключить из поиска</button-->
+    </div>
+{% endblock %}
+{% block win %}
+    <div>
+        <iframe srcdoc="{{ resumeBody }}" width="940px" height="940px" sandbox="allow-same-origin"></iframe>
+    </div>
+{% endblock %}

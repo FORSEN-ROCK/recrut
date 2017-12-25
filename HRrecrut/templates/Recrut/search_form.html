@@ -1,0 +1,50 @@
+﻿{% extends 'Recrut/base.html' %}
+
+{% load staticfiles %}
+
+{% block script %}
+    <!--script src="{% static 'script/multiCheckbox.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Поиска{% endblock %}
+
+{% block content %}
+    <h1>Поиск резюме:</h1>
+    <div>
+        <form action="/search/result/1" method="GET">
+            <input type="hidden" name="task_id" value={{ task_id }}>
+            {% csrf_token %}
+            <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
+            <div class="row">
+                <div class="span11">{{ form.query_text }}</div>
+                <div class="span1"> 
+                    <input type="submit" name="run" value="Поиск"/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.age_from.label }}</div>
+                <div class="span3">{{ form.age_from }}</div>
+                <div class="span3">{{ form.age_to.label }}</div>
+                <div class="span3">{{ form.age_to }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.salary_from.label }}</div>
+                <div class="span3">{{ form.salary_from }}</div>
+                <div class="span3">{{ form.salary_to.label }}</div>
+                <div class="span3">{{ form.salary_to }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.mode.label }}</div>
+                <div class="span3">{{ form.mode }}</div>
+                <div class="span3">{{ form.gender.label }}</div>
+                <div class="span3">{{ form.gender }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.source.label }}</div>
+                <div class="span3">{{ form.source }}</div>
+                <div class="span3">{{ form.city.label }}</div>
+                <div class="span3">{{ form.city }}</div>
+            </div>
+        </form>
+    </div>
+{% endblock %}

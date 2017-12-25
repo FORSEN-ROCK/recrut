@@ -1,0 +1,106 @@
+﻿{% extends 'Recrut/base.html' %}
+
+{% load staticfiles %}
+
+{% block script %}
+    <!--script src="{% static 'script/multiCheckbox.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Результаты поиска{% endblock %}
+
+{% block content %}
+    <h2>Результаты поиска:</h2>
+    <div>
+        <form action="/search/result/1" method="GET">
+            {% csrf_token %}
+            <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
+            <div class="row">
+                <div class="span11">{{ form.query_text }}</div>
+                <div class="span1"> 
+                    <input type="submit" name="run" value="Поиск"/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.age_from.label }}</div>
+                <div class="span3">{{ form.age_from }}</div>
+                <div class="span3">{{ form.age_to.label }}</div>
+                <div class="span3">{{ form.age_to }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.salary_from.label }}</div>
+                <div class="span3">{{ form.salary_from }}</div>
+                <div class="span3">{{ form.salary_to.label }}</div>
+                <div class="span3">{{ form.salary_to }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.mode.label }}</div>
+                <div class="span3">{{ form.mode }}</div>
+                <div class="span3">{{ form.gender.label }}</div>
+                <div class="span3">{{ form.gender }}</div>
+            </div>
+            <div class="row">
+                <div class="span3">{{ form.source.label }}</div>
+                <div class="span3">{{ form.source }}</div>
+                <div class="span3">{{ form.city.label }}</div>
+                <div class="span3">{{ form.city }}</div>
+            </div>
+        </form>
+    </div>
+    <div>
+        {% for error_message in errors %}
+            <div class="alert alert-error">
+                <p><span class="error_message">{{ error_message }}</span></p>
+            </div>
+        {% endfor %}
+        <ul class="unstyled">
+            {% for resumeItem in resumeList %}
+                <il>
+                    <!--div class="person_meta"-->
+                    <div class="well well-large">
+                        <!--span class="btn"-->
+                        <span>
+                            <a href={{ resumeItem.id }} class="output__name">{{ resumeItem.title_resume }}</a>
+                        </span>
+                        {% if resumeItem.domain.preview %}
+                            <br />
+                            <span class="label"-->
+                            <!--span class="label label-inverse"--> 
+                            <!--span class="btn"-->
+                                <a href={{ resumeItem.url }} class="output__name">Предварительный просмотр</a>
+                            </span>
+                        {% endif %}
+                        <div class="output__info">
+                            {% if resumeItem.salary %}
+                                <span class="output__compensation">{{ resumeItem.salary }}</span>
+                            {% endif %}
+                            {% if resumeItem.age %}
+                                <span class="output__age">{{ resumeItem.age }}</span>
+                            {% endif %}
+                        </div>
+                        <p><b>Опыт работы:&nbsp;</b>
+                        {% if resumeItem.experience %}
+                            <span>{{ resumeItem.experience }}</span></p>
+                        {% else %}
+                            <span>Без опыта</span></p>
+                        {% endif %}
+                        <p><b>Последнее место работы:&nbsp;</b>
+                        {% if resumeItem.last_job %}
+                            <span>{{ resumeItem.last_job }}</span></p>
+                        {% else %}
+                            <span>Нет</span></p>
+                        {% endif %}
+                    </div>
+                </il>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}
+{% block pages %}
+    <div class="pagination">
+  <ul>
+    {% for page in pages %}
+        <li><a href= {{ page.href }}>{{ page.num }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

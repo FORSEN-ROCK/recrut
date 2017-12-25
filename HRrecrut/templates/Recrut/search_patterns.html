@@ -1,0 +1,62 @@
+﻿{% extends 'Recrut/base.html' %}
+
+{% load staticfiles %}
+
+{% block style %}
+    <!--link rel="stylesheet" href="{% static 'css/base_resume.css' %}"-->
+{% endblock %}
+{% block script %}
+    <script src="{% static 'script/queryAll.js' %}"></script>
+    <!--script src="{% static 'css/ball/js/jquery.cookie.js' %}"></script-->
+{% endblock %}
+
+{% block title %}Сохраненные резюме{% endblock %}
+
+{% block content %}
+    <div>
+        <!--div class="control_applet">
+            <!--Управление>
+            <button name="query" data-query="true" id="query">Поиск</button>
+            <button name="run" data-run="true" id="run_query" disabled>Выполнить</button>
+        </div-->
+        <div class="data_space">
+            <input type="hidden" name="view_name" value="showeResumes"/>
+            <!--Данные-->
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="row">Вакансия</th>
+                        <th scope="row">Возраст от</th>
+                        <th scope="row">Возраст до</th>
+                        <th scope="row">Зарплата от</th>
+                        <th scope="row">Зарплата до</th>
+                        <th scope="row">Пол</th>
+                        <th scope="row">Город</th>
+                        <th scope="row">Источник</th>
+                        <th scope="row">Режим поиска</th>
+                        <!--
+                        {% for item in colems %}
+                            <th scope="row" data-name={{ item.fieldName }}>{{ item.displayName }}</th>
+                        {% endfor %}
+                        -->
+                    </tr>
+                </thead>
+                    <tbody>
+                    {% for item in search_patterns %}
+                        <tr>
+                            <td scope="row"><a href={{ item.id }}>{{ item.query_text }}</a></td>
+                            <td scope="row">{{ item.age_from }}</td>
+                            <td scope="row">{{ item.age_to }}</td>
+                            <td cscope="row">{{ item.salary_from }}</td>
+                            <td scope="row">{{ item.salary_to }}</td>
+                            <td scope="row">{{ item.gender }}</td>
+                            <td scope="row">{{ item.city }}</td>
+                            <td scope="row">{{ item.source.domainName }}</td>
+                            <td scope="row">{{ item.mode }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

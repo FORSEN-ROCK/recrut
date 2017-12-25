@@ -5,14 +5,14 @@
 def save_candidate(**kwargs):
     import os
     import datetime
-    from sqlalchemy import engine_create
+    from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.ext.declarative import declarative_base
     
     connect_string = 'oracle+cx_oracle://%s:%s@%s' %(os.getenv(''),
                                                      os.getenv(''),
                                                      os.getenv(''))
-    engine = engine_create(connect_string,
+    engine = create_engine(connect_string,
                            exclude_tablespaces=["DATA01", "SOME_TABLESPACE"])
     Base = declarative_base(bind=engine)
     Session = sessionmaker(bind=engine)
@@ -21,7 +21,7 @@ def save_candidate(**kwargs):
     time = datetime.datetime.utcnow()
     row_id = 'HR-' + str(time.minute) + ':' + str(time.second)
     cand = Candidate(row_id=row_id,
-                     created_by=kvwargs.get('created_by', '0-1'),
+                     created_by=kwargs.get('created_by', '0-1'),
                      last_upd_by=kwargs.get('last_upd_by', '0-1'),
                      education=kwargs.get('education', ''),
                      email=kwargs.get('email', ''),
@@ -36,7 +36,7 @@ def save_candidate(**kwargs):
                      source=kwargs.get('source', ''),
                      auto_flg=kwargs.get('auto_flg', 'N'))
     session.add(cand)
-    session.coomit()
+    session.commit()
     session.close_all()
     return True
     
@@ -102,7 +102,7 @@ def candidatemaker(cls):
             self.experience = kwargs.get('experience')
             self.first_name = kwargs.get('first_name')
             self.gender = kwargs.get('gender')
-            self.job_vacancy = kwargs('job_vacancy')
+            self.job_vacancy = kwargs.get('job_vacancy')
             self.last_name = kwargs.get('last_name')
             self.mid_name = kwargs.get('mid_name')
             self.phone = kwargs.get('phone')

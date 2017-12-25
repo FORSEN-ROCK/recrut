@@ -1,9 +1,14 @@
 ﻿import datetime
 import re
 import json
+import math
+from django.http import HttpResponse
+from django.views.generic import ListView, TemplateView, FormView, RedirectView
+from django.views.generic.base import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.forms.models import BaseModelFormSet, modelformset_factory
 from .models import *
@@ -12,151 +17,99 @@ from .services import *
 from .data_transfer import *
 
 #from .models import Resume, ResumeLink, TableColumnHead
-
-def Test(request):
-    ResumeFormSet = modelformset_factory(Resume, form=ResumeForm)
-    return render(request, 'blog/test.html', { 'formset' : ResumeFormSet })
+class AuthorizationView(View):
+    form_class = AuthorizationForm
+    initial = {'key': 'value'}
+    template_name = 'Recrut/auth.html'
+    redirect_url = '/'
     
-def authorization(request):
-    if(request.method == 'GET'):
-        authForm = AuthorizationForm()
-        return render(request, 'blog/auth.html', { 'form' : authForm})
-    if(request.method == 'POST'):
+    def get(self, request):
+        form = self.form_class(initial=self.initial)
+        return render(request, self.template_name, { 'form' : form})
+        
+    def post(self, request):
         username = request.POST['username']
         password = request.POST['password']
+        form = self.form_class(initial=self.initial)
         user = authenticate(username=username, password=password)
         if user is not None:
             if user.is_active:
                 login(request, user)
-                return redirect('/')
+                return redirect(self.redirect_url)
             else:
-                authForm = AuthorizationForm()
-                return render(request, 'blog/auth.html', { 'form' : authForm, 'message' : u'Учетная запись неактивна, обратитесь к администратору'})
+                return render(request, self.template_name, { 'form' : form, 'message' : u'Учетная запись неактивна, обратитесь к администратору'})
         else:
-            authForm = AuthorizationForm()
-            return render(request, 'blog/auth.html', { 'form' : authForm, 'message' : u'Введено некорректное имя пользователя или пароль'})
+            return render(request, self.template_name, { 'form' : form, 'message' : u'Введено некорректное имя пользователя или пароль'})
 
             
-def exit(request):
-    if not request.user.is_authenticated():
-        logout(request)
-    return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
+class ExitView(View):
+    redirect_url = '%s?next=%s'
     
-def homespace(request):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-    else:
+    def get(self, request): 
+        logout(request)
+        return redirect(self.redirect_url %(settings.LOGIN_URL, request.path))
+
+        
+class HomespaceView(LoginRequiredMixin, View):
+    template_name = 'Recrut/index.html'
+    login_url = '/login/'
+    redirect_field_name = ''
+    
+    def get(self, request):
         date = datetime.datetime.today().strftime('%d-%m-%Y')
-        return render(request, 'blog/index.html', {'date' : date})
+        return render(request, self.template_name, {'date' : date})
 
-def searchForm(request):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-    else:
-        form = SearchForm()
-        return render(request, 'blog/search_form.html', {'form' : form})
         
-def searchOrigen(request):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
-        
-    if(request.method == "GET"):
-        errorStack = []
-        data = {key : request.GET.get(key) for key in ('text',
-                                                      'ageTo',
-                                                      'ageFrom',
-                                                      'salaryTo',
-                                                      'salaryFrom', 
-                                                      'gender', 
-                                                      'searchMode'
-                                                      )
-                }
-        form = SearchForm(data)
+class SearchFormView(LoginRequiredMixin, FormView):
+    form_class = SearchForm
+    login_url = '/login/'
+    redirect_field_name = ''
+    template_name = 'Recrut/search_form.html'
+ 
+class FreeSearchView(LoginRequiredMixin, View):
+    form_class = SearchForm
+    login_url = '/login/'
+    redirect_field_name = ''
+    template_name = 'Recrut/search_response.html'
+    
+    def get(self, request, page=1):
+        LIMIT = 35
+        previous_record = (int(page) - 1) * LIMIT
+        next_record = int(page) * LIMIT
+        user = request.user
+        data = {key : request.GET.get(key) for key in ('query_text',
+                                                       'source',
+                                                       'city',
+                                                       'mode',
+                                                       'gender',
+                                                       'age_from',
+                                                       'age_to',
+                                                       'salary_from',
+                                                       'salary_to',            
+                                                       'page'
+                                                       )
+        }
+        form = self.form_class(initial=data)
+        #form = SearchForm(data)
         form.is_valid()
-        dataParm = {key.lower() : data[key] for key in data}
-        source = request.GET.get('source')
-        task_id = request.GET.get('task_id')
-        limit = 20
-        
-        if((task_id is not None) and (task_id != '')):
-            search_card = SearchCard.objects.filter(id=task_id)
-        else:
-            query = SearchCard.objects.filter(text=data['text'], 
-                                              ageFrom=data['ageFrom'],
-                                              ageTo=data['ageTo'], 
-                                              salaryFrom=data['salaryFrom'],
-                                              salaryTo=data['salaryTo'], 
-                                              gender=data['gender'])
-            
-            if query.count() == 0:
-                search_card = SearchCard.objects.create(
-                    text=data['text'], 
-                    ageFrom=data['ageFrom'],
-                    ageTo=data['ageTo'], 
-                    salaryFrom=data['salaryFrom'], 
-                    salaryTo=data['salaryTo'], 
-                    gender=data['gender'])
-                search_card.save()
-            else:
-                search_card = query[0]
-            
-        if(source == 'all'):
-            domainList = [item.name for item in list_of_value.objects.filter(
-                                                    type='SOURCE_LIST') 
-                                                    if item.name != 'all'
-                                                    ]
-        else:
-            domainList = source.split(',')
-
-        
-        if(not domainList):
-            errorMessage = "Произошла ошибка! Не был задан источник резюме"
-            errorStack.append(errorMessage)
-            return render(request, 'blog/search_response.html', {'form': form, 'errors': errorStack})
-
-            
-        ##По идее эта штука должна выполняться параллельно
-        requestList = []
-        emptyCount = 0
-        
-        for domainName in domainList:
-            domain = Domain.objects.get(domainName=domainName, inactive=False)
-            query_result = SearchResult.objects.filter(search_card=search_card, domain=domain)##added=False, hidden=False)
-            
-            if query_result.count() == 0:
-                parser = OriginParsing(domain, limit, "SEARCH", search_card)
-                parser.generalSchem()
-                parser.setErrorTarget()
-                parser.setBodyResponceTarget()
-                linkOrigen = OrigenUrl(domain=domain)
-                linkOrigen.createSearchLink(dataParm, data)
-                requestOrig = OrigenRequest(domain,linkOrigen)
-                while(parser.countResume < limit):
-                    
-                    requestTree = requestOrig.request()
-                    print('------------------')
-                    requestItem = parser.parsingResume(requestTree)
-                    
-                    if(requestItem):
-                        requestList += requestItem
-                    else:
-                        emptyCount += 1
-                    
-                    if(emptyCount > 5):
-                        errorMessage = 'В настоящее время сервер %s недоступен по техническим причинам' % domain.domainName
-                        errorStack.append(errorMessage)
-                        break
-            
-            else:
-                requestList += query_result[:limit]
-                    
-        return  render(request, 'blog/search_response.html', {'form': form, 'resumeList': requestList, 'errors': errorStack})
-        
-    elif(request.method == 'POST'):
-        form = SearchForm(request.POST)
-        return render(request, 'blog/search_response.html', {'form': form})
-
-##Сделать нормално tree - это не bf дерево, это контент ответа на запрос
+        dataParm = {key.lower() : data[key] for key in data if data[key] != ''}
+        response = SearchResult.search_objects.search(
+                                query_text=dataParm.get('query_text'),
+                                city=dataParm.get('city'),
+                                mode=dataParm.get('mode'),
+                                source=dataParm.get('source'),
+                                gender=dataParm.get('gender'),
+                                age_from=dataParm.get('age_from'),
+                                age_to=dataParm.get('age_to'),
+                                salary_from=dataParm.get('salary_from'),
+                                salary_to=dataParm.get('salary_to'))
+        for item in response:
+            item.id = 'resume/%s' %(item.id)
+        response_count = response.count()
+        page_count = math.ceil(response_count / LIMIT) + 1
+        pages = [{'num': num, 'href': num} for num in range(1, page_count)]
+        response = response[previous_record:next_record]
+        return render(request, self.template_name, {'form': form,              'resumeList': response, 'pages': pages})
         
         
 def parsingOrigen(request, resume_id):
@@ -189,8 +142,9 @@ def parsingOrigen(request, resume_id):
     else:
         form = PasingForm(resumeData)
         
-    return render(request, 'blog/resume_pars.html', {'form': form, 'resumeBody': requestContent, 'link': absResumeLink}) 
+    return render(request, 'Recrut/resume_pars.html', {'form': form, 'resumeBody': requestContent, 'link': absResumeLink}) 
 
+    
 def saveResume(data):
     if(data['command'] == "save"):
         checkPerson = Resume.objects.filter(firstName=data['firstName'],
@@ -222,7 +176,7 @@ def saveResume(data):
                            mid_name=data['middleName'],
                            phone=data['phone'],
                            region=data['location'],
-                           auto_flg='N')
+                           auto_flg=data['auto_flg'])
             '''
             status = 'Success'
         else:
@@ -238,29 +192,44 @@ def saveResume(data):
         
     return JsonResponse({'status': status}) 
         
-        
-def showeResumes(request):
-    if not request.user.is_authenticated():
-        return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
-        
-    if(request.method == 'GET'):
-        tableHeader = TableColumnHead.objects.filter(tableName='Resumes')
-        resumeRecords = Resume.objects.all()
-        for item in resumeRecords:
+
+class ShoweResume(LoginRequiredMixin, ListView):
+    model = Resume
+    login_url = '/login/'
+    redirect_field_name = ''
+    context_object_name = 'resumes'
+    template_name = 'Recrut/resume_view.html'
+    
+    def get_queryset(self):
+        queryset = self.model.objects.filter(
+                        user=self.request.user)
+        for item in queryset:
             item.id = '/resume/link/' + str(item.id)
-        return render(request, 'blog/resume_view.html', {'colems': tableHeader, 'resumes': resumeRecords})
+        return queryset
+    
+
+class ShoweLinkView(LoginRequiredMixin, View):
+    template_name = 'Recrut/link_view.html'
+    login_url = '/login/'
+    redirect_field_name = ''
+    context_object_name = 'resumes'
+    form_class = ResumeForm
+    model = Resume
+    
+    def get(self, request, record_id):
+        try:
+            resume = Resume.objects.get(id=record_id)
+        except:
+            # return render page 404
+            pass
+        formset = modelformset_factory(self.model,
+                                       form=self.form_class,
+                                       extra=0)
+        ResumeFormSet = formset(queryset=Resume.objects.filter(id=record_id))
+        linksResume = ResumeLink.objects.filter(resume=resume)
+        return render(request, self.template_name, {'links': linksResume,             'form_resume': ResumeFormSet})
+
         
-def showeLink(request, idRecord=0):
-    tableHeader = TableColumnHead.objects.filter(tableName='Link')
-    resume = Resume.objects.get(id=idRecord)
-    ResumeFormSet = modelformset_factory(Resume, form=ResumeForm, extra=0)
-    formset = ResumeFormSet(queryset=Resume.objects.filter(id=idRecord))
-    #resumeForm = ResumeRecord()
-    #resumeForm = modelformset_factory(resume, form=ResumeForm)
-    linksResume = ResumeLink.objects.filter(resume=resume)
-    
-    return render(request, 'blog/link_view.html',{'colems': tableHeader, 'links': linksResume, 'form_resume': formset})
-    
 def incomingTreatment(request):
     if(request.is_ajax()):
         data = json.loads(request.body.decode())
@@ -278,10 +247,13 @@ def searchTask(request):
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path)) 
     
     table_header = TableColumnHead.objects.filter(tableName='SearchCard')
-    search_cards = SearchCard.objects.all()
-    
+    #cards = SearchCard.objects.all()
+    search_cards = []
+    for item in SearchCard.objects.all():
+        item.id = '/search/' + str(item.id)
+        search_cards.append(item)
     return render(request, 'blog/search_cards.html',{'colems': table_header, 'search_cards': search_cards})
-    
+'''    
 def searchForTask(request, idTask=0):
     if not request.user.is_authenticated():
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
@@ -289,3 +261,61 @@ def searchForTask(request, idTask=0):
     search_task = SearchCard.objects.get(id=idTask)
     search_form = SearchForm(search_task.__dict__)
     return render(request, 'blog/search_form.html', {'form' : search_form, 'task_id': idTask})
+'''
+
+
+class ShowePattersView(LoginRequiredMixin, View):
+    template_name = 'Recrut/search_patterns.html'
+    login_url = '/login/'
+    redirect_field_name = ''
+    
+    def get(self, request):
+        user = request.user
+        patterns = []
+        for item in SearchPattern.objects.filter(user=user):
+            item.id = '/search/%s' %(item.id)
+            patterns.append(item)
+        return render(request, self.template_name,{
+                     'search_patterns': patterns})
+
+
+class SearchView(LoginRequiredMixin, View):
+    form_class = SearchForm
+    login_url = '/login/'
+    redirect_field_name = ''
+    redirect_url = '/search/%s/result/1'
+    
+    def get(self, request, pattern_id):
+        pattern = SearchPattern.objects.get(id=pattern_id)
+        form = self.form_class(initial=pattern.__dict__)
+        return redirect(self.redirect_url %(pattern_id))
+    
+class ResponsSearcheView(LoginRequiredMixin, View):
+    form_class = SearchForm
+    initial = {'key': 'value'}
+    login_url = '/login/'
+    redirect_field_name = ''
+    template_name = 'Recrut/search_response.html'
+    
+    def get(self, request, pattern_id, page=1):
+        LIMIT = 35
+        previous_record = (int(page) - 1) * LIMIT
+        next_record = int(page) * LIMIT
+        user = request.user    
+        pattern = SearchPattern.objects.get(id=pattern_id, user=user)
+        form = self.form_class(initial=pattern.__dict__)
+        response = SearchResult.search_objects.search(
+                                query_text=pattern.query_text,
+                                city=pattern.city,
+                                mode=pattern.mode,
+                                source=pattern.source,
+                                gender=pattern.gender,
+                                age_from=pattern.age_from,
+                                age_to=pattern.age_to,
+                                salary_from=pattern.salary_from,
+                                salary_to=pattern.salary_to)
+        response_count = response.count()
+        page_count = math.ceil(response_count / LIMIT) + 1
+        pages = [{'num': num, 'href': num} for num in range(1, page_count)]
+        response = response[previous_record:next_record]
+        return render(request, self.template_name, {'form': form,              'resumeList': response, 'pages': pages})

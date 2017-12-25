@@ -6,19 +6,19 @@ class list_of_valueAdmin(admin.ModelAdmin):
     list_display = ('type','lang_id','name','value')
 
 class SearchObjectAdmin(admin.ModelAdmin):
-    list_display = ('domain','SearchMode','age','gender','pay','link','parametrs','iterator','iterStep','startPosition')
+    list_display = ('domain','SearchMode','age','gender','pay','link',                'parametrs','iterator','iterStep','startPosition')
     search_fields = ('SearchMode',)
-
+'''
 class ResumeAdmin(admin.ModelAdmin):
-    list_display = ('firstName','lastName','middleName','gender','phone','email','location','education','experience')
+    list_display = ('firstName','lastName','middleName','gender','phone',                'email','location','education','experience')
     search_fields = ('firstName','lastName','middleName','phone','email')
-
+'''
 class ResumeLinkAdmin(admin.ModelAdmin):
     list_display = ('url','resume')
     search_fields = ('resume',)
     
 class DomainAdmin(admin.ModelAdmin):
-    list_display = ('domainName','descriptions','rootUrl','preview','itemRecord')
+    list_display = ('domainName','descriptions','rootUrl','preview',                'itemRecord')
     search_fields = ('domainName',)
     
 class VailidValuesAdmin(admin.ModelAdmin):
@@ -26,15 +26,21 @@ class VailidValuesAdmin(admin.ModelAdmin):
     search_fields = ('criterionName','context')
     
 class ExpressionAdmin(admin.ModelAdmin):
-    list_display = ('SchemaParsing','split','shearTo','shearFrom','sequence','regexp','seqOper','join')
+    list_display = ('SchemaParsing','split','shearTo','shearFrom','sequence',                'regexp','seqOper','join')
 
+class SearchPatternAdmin(admin.ModelAdmin):    
+    list_display = ('query_text', 'age_from', 'age_to', 'salary_from',
+                    'salary_to', 'gender', 'city', 'source', 'mode',
+                    'user')
+'''    
 class SearchCardAdmin(admin.ModelAdmin):
     list_display = ('text','ageFrom','ageTo','salaryFrom','salaryTo','gender')
 
 class SearchResultAdmin(admin.ModelAdmin): 
-    list_display = ('search_card', 'domain', 'pay', 'age', 'jobExp', 'lastJob', 'jobTitle', 'gender', 'url')
+    list_display = ('pattern', 'domain', 'pay', 'age', 'jobExp', 
+                    'lastJob', 'jobTitle', 'gender', 'url')
     search_fields = ('search_card','domain')
-    
+'''    
 class TableColumnHeadAdmin(admin.ModelAdmin):
     list_display = ('displayName','fieldName','tableName')
     
@@ -50,8 +56,9 @@ admin.site.register(Credentials)
 admin.site.register(CredentialsData)
 admin.site.register(RequestHeaders)
 admin.site.register(SessionData)
-admin.site.register(SearchCard, SearchCardAdmin)
-admin.site.register(Resume, ResumeAdmin)
+##admin.site.register(SearchCard, SearchCardAdmin)
+admin.site.register(SearchPattern, SearchPatternAdmin)
+##admin.site.register(Resume, ResumeAdmin)
 admin.site.register(ResumeLink, ResumeLinkAdmin)
-admin.site.register(SearchResult, SearchResultAdmin)
+##admin.site.register(SearchResult, SearchResultAdmin)
 admin.site.register(TableColumnHead, TableColumnHeadAdmin)

@@ -1,7 +1,9 @@
 ﻿{% extends 'Recrut/base.html' %}
 
 {% load staticfiles %}
-
+{% block style %}
+    <link rel="stylesheet" href="{% static 'css/custom_style_for_recrut.css' %}">
+{% endblock %}
 {% block script %}
     <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
     <!--script src="{% static 'script/seveResume.js' %}"></script-->

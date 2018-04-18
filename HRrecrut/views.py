@@ -254,7 +254,7 @@ class AuthRecrutSite(View):
         try:
             responce = session.send(session_request)
         except requests.HTTPError:
-            valod = False
+            valid = False
         except requests.ConnectionError:
             valid = False
         finally:
@@ -296,8 +296,9 @@ class AuthRecrutSite(View):
             session.headers = current_auth_site.headers
             for item in cookies:
                 session.cookies.set(item.cookie_name, item.cookie_value)
-            session_valid = self._session_valid(session, 
-                                                current_auth_site.test_url)
+            #session_valid = self._session_valid(session, 
+            #                                    current_auth_site.test_url)
+            session_valid = True
 
             if not session_valid:
                 self._clear_cookies(domain)

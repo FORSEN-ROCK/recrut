@@ -2,59 +2,92 @@
 from django.forms import ModelForm
 from django.utils.translation import ugettext as _
 from django.forms.widgets import PasswordInput, RadioSelect, CheckboxSelectMultiple, Select, SelectMultiple, MultiWidget
-from .models import list_of_value, Resume, SearchCard
+from django.contrib.admin import widgets
+
+from .models import  SiebelCandidate, SiebelVacancy
+from .widgets import ManyToManyWidget, CalendarWidget
+
 
 #Custom field
+class ManyToManyField(forms.MultiValueField):
+    def __init__(self, choice=[], selected=[], *args, **kwargs):
+        list_fields = [forms.MultipleChoiceField(choices=choice),
+                       forms.MultipleChoiceField(choices=selected)
+                       ]
+        super(ManyToManyField, self).__init__(
+                        list_fields, 
+                        widget=ManyToManyWidget(choice, selected),
+                        *args,
+                        **kwargs
+        )
+
 
 #Choices List
 NEVER_MIND = None
-MAN = 'man'
-FEMALE = 'female'
+MAN = 'М'
+FEMALE = 'Ж'
 GENDER_CHOICES = (
    (NEVER_MIND, 'Неважно'),
    (MAN, 'Мужской'),
    (FEMALE, 'Женский'),        
 )
+
 ALL_TEXT = 'All text'
-IN_TITLE = 'In title'
-KEY_WORDS = 'Key Words'
+IN_TITLE_COMP_COIN = 'In title, complete coincidence'
+IN_TITLE_PART_OF = 'In title is part of'
+KEY_WORDS_COMP_COIN = 'Key Words, complete coincidence'
+KEY_WORDS_PART_OF = 'Key Words part of'
+ORG_NAME_COMP_COIN = 'Organization name, complete coincidence'
+ORG_NAME_PART_OF  = 'Organization name part of'
+IN_EXPERIENCE_DESCRIPTION = 'In experience descriptions'
+POSITION_NAME_COMP_COIN = 'Last position name, complete coincidence'
+POSITION_NAME_PART_OF = 'Last position name part of'
 MODE_CHOICES = (
    (ALL_TEXT, 'По всему тексту'),
-   (IN_TITLE, 'В название резюме'),
-   (KEY_WORDS, 'По ключевым словам '),
+   (IN_TITLE_COMP_COIN, 'В название резюме, полное совпадение'),
+   (IN_TITLE_PART_OF, 'В название резюме, входит в состав'),
+   (KEY_WORDS_COMP_COIN, 'По ключевым словам, полное совпадение'),
+   (KEY_WORDS_PART_OF, 'По ключевым словам, входит в состав'),
+   (ORG_NAME_COMP_COIN, 'По организации, полное совпадение'),
+   (ORG_NAME_PART_OF, 'По организации, входит в состав'),
+   (IN_EXPERIENCE_DESCRIPTION, 'В описание опыта работы'),
+   (POSITION_NAME_COMP_COIN, 'В названии должности, полное совпадение'),
+   (POSITION_NAME_PART_OF, 'В названии должности, входит в состав')
 )
 MOSCOW = 'Москва'
 SAINT_PETERSBURG = 'Санкт-Петербург'
-ROSTOV_ON_DON = 'Ростов на Дону'
+ROSTOV_ON_DON = 'Ростов-на-Дону'
 KRASNODAR = 'Краснодар'
 EKATERINBURG = 'Екатеринбург'
+KALININGRAD = 'Калининград'
 CITY_CHOICES = (
     (MOSCOW, 'Москва'),
     (SAINT_PETERSBURG, 'Санкт-Петербург'),
-    (ROSTOV_ON_DON, 'Ростов на Дону'),
+    (ROSTOV_ON_DON, 'Ростов-на-Дону'),
     (KRASNODAR, 'Краснодар'),
     (EKATERINBURG, 'Екатеринбург'),
+    (KALININGRAD, 'Калининград')
 )
-SEARCH_ALL = 0
-HEAD_HANTER = 1
-SUPER_JOB = 2
-RABOTA_RU = 3
-AVITO = 4
+ALL_SOURCE = 'Искать по всем'
+HEAD_HANTER = 'hh.ru'
+SUPER_JOB = 'www.superjob.ru'
+RABOTA_RU = 'www.rabota.ru'
+AVITO = 'www.avito.ru'
+RABOTA = 'www.rabota.ru'
+FORPOST = 'www.farpost.ru'
+RABOTAVGORODE = 'rabotavgorode.ru'
+ZARPLATA = 'www.zarplata.ru'
 SOURCE_CHOICES = (
-    (SEARCH_ALL, 'Искать по всем'),
+    (ALL_SOURCE, 'Искать по всем'),
     (HEAD_HANTER, 'hh.ru'),
     (SUPER_JOB, 'superjob.ru'),
     (RABOTA_RU, 'rabota.ru'),
-    (AVITO, 'Avito.ru')
+    (AVITO, 'avito.ru'),
+    (RABOTA, 'rabota.ru'),
+    (FORPOST, 'farpost.ru'),
+    (RABOTAVGORODE, 'rabotavgorode.ru'),
+    (ZARPLATA,'zarplata.ru')
 )
-
-
-
-
-##GENDER_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filter(type='GENDER')]
-LOCATION_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filter(type='LOCATION')]
-##SEARCH_MODE_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filter(type='SEARCH_MODE')]
-SOURCE_LIST_CHOICES = [(item.name,item.value) for item in list_of_value.objects.filter(type='SOURCE_LIST')]
 
 
 class ResumeRecord(forms.Form):
@@ -92,7 +125,11 @@ class SearchForm(forms.Form):
 '''
 
 class SearchForm(forms.Form):
-    query_text = forms.CharField(label=False, max_length=100, required=True)
+    query_text = forms.CharField(label=False, max_length=100, 
+                                 required=True,
+                                 widget=forms.TextInput(attrs={
+                                 "class": "input-xxlarge",
+                                 "type": "text"}))
     limit = forms.CharField(label="Число записей с источника:", max_length=30,                        required=False)
     age_from = forms.CharField(label="Возраст от:", max_length=2, 
                               required=False)
@@ -107,35 +144,39 @@ class SearchForm(forms.Form):
     source = forms.MultipleChoiceField(label="Источники:", widget=Select,                                   choices=SOURCE_CHOICES)
     city = forms.ChoiceField(label="Город:", widget=Select,                         choices=CITY_CHOICES)   
 
-class PasingForm(forms.Form):
-    first_name = forms.CharField(label="Имя:", max_length=40, required=True)
-    last_name = forms.CharField(label="Фамилия:", max_length=40, required=True)
+class ParsingForm(forms.Form):
+    first_name = forms.CharField(label="Имя:", max_length=40, 
+                                 required=True)
+    last_name = forms.CharField(label="Фамилия:", max_length=40, 
+                                required=True)
     middle_name = forms.CharField(label="Отчество:", max_length=40, 
                                 required=True)
     gender = forms.ChoiceField(label="Пол:", widget=Select, choices=                           GENDER_CHOICES, required=False)
+    birth = forms.DateField(label="Дата рождения:", required=True,
+                            widget=CalendarWidget)
     phone = forms.CharField(label="Телефон:", max_length=11, required=True)
     email = forms.EmailField(label="E-mail:")
     city = forms.ChoiceField(label="Регион:", widget=Select,
                                 choices=CITY_CHOICES, required=False)
-    education = forms.CharField(label="Образование:", max_length=40, 
-                                required=True)
-    experience = forms.CharField(label="Опыт работы:", max_length=40, 
-                                required=True)
-'''
-class ResumeForm(ModelForm):
+    degree_of_education = forms.CharField(label="Образование:", 
+                                          max_length=40, 
+                                          required=True)
+    length_of_work = forms.CharField(label="Опыт работы:", max_length=40, 
+                                     required=True)
+    vacancy = ManyToManyField(label='Вакансия:',
+                              required=True)
+
+
+    def __init__(self, choice_list, selected_list, *args, **kwargs):
+        super(ParsingForm, self).__init__(*args, **kwargs)
+        self.fields['vacancy'].widget = ManyToManyWidget(choice_list,
+                                                         selected_list) 
+
+
+class SiebelCandidateForm(ModelForm):
     class Meta:
-        model = Resume
-        fields = ['firstName','lastName','middleName','gender','phone','email','location','education','experience']
-'''
-class ResumeForm(ModelForm):
-    class Meta:
-        model = Resume
-        fields = [
-                 'first_name', 'last_name', 'middle_name',
-                 'gender', 'phone', 'email', 
-                 'city', 'education', 'experience'
-                 ]                 
-class SearchCardForm(ModelForm):
-    class Meta:
-        model = SearchCard
-        fields = ['text','city']
+        model = SiebelCandidate
+        fields = ['first_name', 'last_name', 'middle_name', 'phone', 
+                 'education','email', 'experience', 'gender',
+                 'source', 'auto_flag', 'region', 'vacancy',
+                 'birth']

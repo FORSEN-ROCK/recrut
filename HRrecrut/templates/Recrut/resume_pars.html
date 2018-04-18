@@ -6,63 +6,113 @@
     <!--script src="{% static 'script/loadSourceRedume.js' %}"></script-->
     <!--script src="{% static 'script/seveResume.js' %}"></script-->
     <script src="{% static 'script/queryAll.js' %}"></script>
+    <script src="{% static 'script/ManyToManySelect.js' %}"></script>
 {% endblock %}
 
 {% block title %}Разобор резюме{% endblock %}
 
 {% block content %}
-    <div>
+    <div class="row">
         <div id="status">
         </div>
         <form class="form-signin">
             <input type="hidden" name="view_name" value="parsingOrigen"/>
+            <input type="hidden" name="source" value={{ source }} />
             <input type="hidden" name="link" value={{ link }} />
             {% csrf_token %}
             <div class="row">
-                <div class="span4">{{  form.first_fame.label }}</div>
-                <div class="span4">{{  form.last_name.label }}</div>
-                <div class="span4">{{  form.middle_name.label }}</div>
+                <div class="span3">
+                    <label>{{  form.first_name.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.last_name.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.middle_name.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.birth.label  }}</label>
+                </div>
             </div>
             <div class="row">
-                <div class="span4">{{  form.first_name }}</div>
-                <div class="span4">{{  form.last_name }}</div>
-                <div class="span4">{{  form.middle_name }}</div>
+                <div class="span3">{{  form.first_name }}</div>
+                <div class="span3">{{  form.last_name }}</div>
+                <div class="span3">{{  form.middle_name }}</div>
+                <div class="span3">{{  form.birth }}</div>
             </div>
             <div class="row">
-                <div class="span4">{{  form.gender.label }}</div>
-                <div class="span4">{{  form.phone.label }}</div>
-                <div class="span4">{{  form.email.label }}</div>
+                <div class="span3">
+                    <label>{{  form.gender.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.city.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.phone.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.email.label }}</label>
+                </div>
             </div>
             <div class="row">
-                <div class="span4">{{  form.gender }}</div>
-                <div class="span4">{{  form.phone }}</div>
-                <div class="span4">{{  form.email }}</div>
+                <div class="span3">{{  form.gender }}</div>
+                <div class="span3">{{  form.city }}</div>
+                <div class="span3">{{  form.phone }}</div>
+                <div class="span3">{{  form.email }}</div>
             </div>
             <div class="row">
-                <div class="span4">{{  form.city.label }}</div>
-                <div class="span4">{{  form.education.label }}</div>
-                <div class="span4">{{  form.experience.label }}</div>
+                <div class="span3">
+                    <label>{{  form.degree_of_education.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>{{  form.length_of_work.label }}</label>
+                </div>
+                <div class="span3">
+                    <label>Наличие машины:</label>
+                </div>
             </div>
             <div class="row">
-                <div class="span4">{{  form.city }}</div>
-                <div class="span4">{{  form.education }}</div>
-                <div class="span4">{{  form.experience }}</div>
+                
+                <div class="span3">{{  form.degree_of_education }}</div>
+                <div class="span3">{{  form.length_of_work }}</div>
+                <div class="span3">
+                    <input type="checkbox" name="auto_flg">
+                </div>
             </div>
             <fieldset>
                 <div class="row">
                     <div class="span4">
-                        Есть авто:
-                        <input type="checkbox" name="auto_flg">
+                        <label>{{ form.vacancy.label }}</label>
                     </div>
+                    <input type="hidden" name="select_vacancy" value="" />
+                </div>
+                <div class="row">
+                    {{ form.vacancy }}
                 </div>
             </fieldset>
         </form>
-        <button name="save" data-save="true" id="save">Сохранить</button>
-        <!--button name="exclude" id="exclude ">Исключить из поиска</button-->
+        <div class="row">
+            <div class="span3">
+                <button name="right" class="btn">Рассматривать кандидата на вакансию</button>
+            </div>
+            <div class="span3">
+                <button name="left" class="btn">Не рассматривать на вакансию</button>
+            </div>
+            <div class="span6 offset9">
+                <button name="save" data-save="true" id="save" class="btn">
+                        Сохранить кандидата в CRM
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span3">
+                <label>Резюме на ресурсе:</label>
+            </div>
+        </div>
     </div>
 {% endblock %}
 {% block win %}
-    <div>
+    <div class="row">
         <iframe srcdoc="{{ resumeBody }}" width="940px" height="940px" sandbox="allow-same-origin"></iframe>
     </div>
 {% endblock %}

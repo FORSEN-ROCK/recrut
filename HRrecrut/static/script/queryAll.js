@@ -1,7 +1,7 @@
 ﻿
 function validURL(){
     var VRegExp = new RegExp(/\/(http.+)/);
-    var noValidHref = window.location.href
+    var noValidHref = window.location.href;
     var VResult = noValidHref.match(VRegExp); 
     var link = document.body.querySelector("input[name='id']");
     link.value = VResult[1];
@@ -45,16 +45,20 @@ function complileSaveData() {
     var fields = document.body.querySelector('form');
     var VIEW_NAME = document.querySelector("input[name='view_name']").value;
     var linkResume = document.querySelector("input[name='link']").value;
-    var checkbox = document.querySelector("input[name='auto_flg']")
+    var checkbox = document.querySelector("input[name='auto_flg']");
+    var vacancy = document.body.querySelector("input[name='select_vacancy']").value;
+    var source = document.body.querySelector("input[name='source']").value;
     var auto_flg = checkbox.checked ? 'Y' : 'N';
     var fieldsData = {view : VIEW_NAME, link : linkResume};
     for(var i=0; i < fields.elements.length; i++){
         if(fields.elements[i].type != "hidden" && 
-                fields.elements[i].type != "checkbox"){
+           fields.elements[i].type != "checkbox"){
             fieldsData[fields.elements[i].name] = fields.elements[i].value;
         }
     }
     fieldsData['auto_flg'] = auto_flg;
+    fieldsData['vacancy'] = vacancy;
+    fieldsData['source'] = source;
     return fieldsData;
 }
 
@@ -63,13 +67,18 @@ function showeStatus(responseMessage){
     //console.log(contenerStatus);
     //console.log(responseMessage);
     //var message  = JSON.parse(responseMessage);
-    var messageElement = document.createElement("div");
+    var messageElement = document.getElementById("status_message");
+
+    if(messageElement == undefined)
+        var messageElement = document.createElement("div");
     
     if(responseMessage.status == "Success" || responseMessage.status == "Update link"){
+        messageElement.id = "status_message";
         messageElement.className = "alert alert-success";
         messageElement.innerHTML = "Данные сохранены или обновлены";
     }
     else{
+        messageElement.id = "status_message";
         messageElement.className = "alert alert-error";
         messageElement.innerHTML = "Произошла ошибка";
     }
@@ -115,7 +124,7 @@ document.addEventListener("click",function(event){
                     }
                 });
                 $.ajax({
-                    url: "incoming/",
+                    url: window.location.href + "/incoming/",
                     type: "POST",
                     data: data,
                     success: function(response) { console.log('s;lfkd;fl');},
@@ -136,7 +145,7 @@ document.addEventListener("click",function(event){
                     }
                 });
                 $.ajax({
-                    url: "incoming/",
+                    url: window.location.href + "/incoming/",
                     type: "POST",
                     data: data,
                     success: function(data) { console.log(data); showeStatus(data);},

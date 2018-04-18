@@ -4,6 +4,7 @@
 
 {% block script %}
     <!--script src="{% static 'script/multiCheckbox.js' %}"></script-->
+    <script src="{% static 'script/createLink.js' %}"></script>
 {% endblock %}
 
 {% block title %}Результаты поиска{% endblock %}
@@ -11,15 +12,22 @@
 {% block content %}
     <h2>Результаты поиска:</h2>
     <div>
-        <form action="/search/result/1" method="GET">
+        <form action="/search/result/" method="GET">
             {% csrf_token %}
-            <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
+            <!--{{ pageNamber }}
+            /-->
             <div class="row">
                 <div class="span11">{{ form.query_text }}</div>
                 <div class="span1"> 
-                    <input type="submit" name="run" value="Поиск"/>
+                    <!--input type="submit" name="run" value="Поиск"/-->
+                    <button class="btn" type="submit">Найти</button>
                 </div>
             </div>
+            <!--div class="input-append">
+                {{ form.query_text }}
+                {{ form.source }}
+                <button class="btn" type="submit" width="176px">Найти</button>
+            </div-->
             <div class="row">
                 <div class="span3">{{ form.age_from.label }}</div>
                 <div class="span3">{{ form.age_from }}</div>
@@ -44,7 +52,14 @@
                 <div class="span3">{{ form.city.label }}</div>
                 <div class="span3">{{ form.city }}</div>
             </div>
+            <input type="hidden" name="page" value="1">
         </form>
+    </div>
+    <div class="row">
+        <div class="span9">
+            <span>Найдено: </span>
+            <span><b>{{ record_count }}</b></span>
+        </div>
     </div>
     <div>
         {% for error_message in errors %}
@@ -71,23 +86,39 @@
                         {% endif %}
                         <div class="output__info">
                             {% if resumeItem.salary %}
-                                <span class="output__compensation">{{ resumeItem.salary }}</span>
+                                <span class="output__compensation">{{ resumeItem.salary }}<b>&nbsp;Руб.</b></span>
+                            {% else %}
+                                <span class="output__compensation">Не указана</span>
                             {% endif %}
+                                <span class="output__age"><b>Возраст:&nbsp;</b></span>
                             {% if resumeItem.age %}
                                 <span class="output__age">{{ resumeItem.age }}</span>
                             {% endif %}
                         </div>
                         <p><b>Опыт работы:&nbsp;</b>
-                        {% if resumeItem.experience %}
-                            <span>{{ resumeItem.experience }}</span></p>
+                        {% if resumeItem.length_of_work %}
+                            <span>{{ resumeItem.length_of_work }}</span></p>
                         {% else %}
                             <span>Без опыта</span></p>
                         {% endif %}
-                        <p><b>Последнее место работы:&nbsp;</b>
-                        {% if resumeItem.last_job %}
-                            <span>{{ resumeItem.last_job }}</span></p>
+                        <p><b>Образование:&nbsp;</b>
+                        {% if resumeItem.degree_of_education %}
+                            <span>{{ resumeItem.degree_of_education }}</span></p>
                         {% else %}
-                            <span>Нет</span></p>
+                            <span>Без образования</span></p>
+                        {% endif %}
+                        {% if resumeItem.organization_name %}
+                            <p><b>Последнее место работы:&nbsp;</b>
+                            <span>{{ resumeItem.organization_name }}</span></p>
+                        {% endif %}
+                        {% if resumeItem.last_position %}
+                            <p><b>Должность:&nbsp;</b>
+                            <span>{{ resumeItem.last_position }}</span></p>
+                        {% endif %}
+                        {% if resumeItem.last_update %}
+                            <p class="muted">{{ resumeItem.last_update }}</p>
+                        {% else %}
+                            <p class="muted">Сегодня</p>
                         {% endif %}
                     </div>
                 </il>
@@ -99,7 +130,7 @@
     <div class="pagination">
   <ul>
     {% for page in pages %}
-        <li><a href= {{ page.href }}>{{ page.num }}</a></li>
+        <li><a href="" data-num={{ page.href }}>{{ page.num }}</a></li>
     {% endfor %}
   </ul>
 </div>

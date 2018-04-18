@@ -11,14 +11,15 @@
 {% block content %}
     <h1>Поиск резюме:</h1>
     <div>
-        <form action="/search/result/1" method="GET">
-            <input type="hidden" name="task_id" value={{ task_id }}>
+        <form action="/search/result/" method="GET">
+            <!--input type="hidden" name="task_id" value={{ task_id }}-->
             {% csrf_token %}
-            <input type="hidden" name="page" vlaue="1"/><!--{{ pageNamber }} /-->
+            <!--{{ pageNamber }} /-->
             <div class="row">
                 <div class="span11">{{ form.query_text }}</div>
                 <div class="span1"> 
-                    <input type="submit" name="run" value="Поиск"/>
+                    <!--input type="submit" name="run" value="Поиск"/-->
+                    <button class="btn" type="submit">Найти</button>
                 </div>
             </div>
             <div class="row">
@@ -45,6 +46,7 @@
                 <div class="span3">{{ form.city.label }}</div>
                 <div class="span3">{{ form.city }}</div>
             </div>
+            <input type="hidden" name="page" value="1"/>
         </form>
     </div>
 {% endblock %}
